@@ -23,6 +23,9 @@ class CNCController
     int currentSide;
     int currentCommand;
 
+    Command lastExecutedCommand;
+    bool awaitingCompletion = false;
+
     AccelStepper stepperX;
     AccelStepper stepperY;
     AccelStepper stepperRotation;

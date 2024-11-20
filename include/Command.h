@@ -9,6 +9,10 @@ class Command
     float value;   // Distance in inches or degrees for rotation
     bool sprayOn;  // Whether spray should be on during movement
 
+    // Default constructor
+    Command() : type('N'), value(0), sprayOn(false) {}
+
+    // Regular constructor
     Command(char t, float v, bool s) : type(t), value(v), sprayOn(s) {}
 };
 
