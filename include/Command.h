@@ -5,7 +5,7 @@
 class Command
 {
    public:
-    char type;  // 'X' for X move, 'Y' for Y move, 'R' for rotate, 'S' for spray
+    char type;  // 'X' for X move, 'Y' for Y move, 'M' for X moveTo, 'N' for Y moveTo, 'R' for rotate, 'S' for spray
     float value;   // Distance in inches or degrees for rotation
     bool sprayOn;  // Whether spray should be on during movement
 
@@ -19,6 +19,8 @@ class Command
 // Command Creation Macros
 #define MOVE_X(dist, spray) Command('X', dist, spray)
 #define MOVE_Y(dist, spray) Command('Y', dist, spray)
+#define MOVETO_X(pos, spray) Command('M', pos, spray)
+#define MOVETO_Y(pos, spray) Command('N', pos, spray)
 #define ROTATE(deg) Command('R', deg, false)
 #define SPRAY_ON() Command('S', 0, true)
 #define SPRAY_OFF() Command('S', 0, false)

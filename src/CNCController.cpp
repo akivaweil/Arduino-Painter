@@ -71,8 +71,20 @@ void CNCController::executeCommand(const Command& cmd)
             stepperY.move(cmd.value * Y_STEPS_PER_INCH);
             break;
 
+        case 'M':  // Absolute X movement
+            if (cmd.sprayOn)
+                digitalWrite(PAINT_RELAY_PIN, LOW);
+            stepperX.moveTo(cmd.value * X_STEPS_PER_INCH);
+            break;
+
+        case 'N':  // Absolute Y movement
+            if (cmd.sprayOn)
+                digitalWrite(PAINT_RELAY_PIN, LOW);
+            stepperY.moveTo(cmd.value * Y_STEPS_PER_INCH);
+            break;
+
         case 'R':
-            stepperRotation.move((cmd.value * STEPS_PER_ROTATION) / 360);
+            stepperRotation.moveTo((cmd.value * STEPS_PER_ROTATION) / 360);
             break;
 
         case 'S':
@@ -111,20 +123,20 @@ void CNCController::processPattern()
         switch (currentSide)
         {
             case 0:
-                currentPattern = SIDE1_PATTERN;
-                patternSize = SIDE1_SIZE;
+                currentPattern = FRONT;
+                patternSize = FRONT_SIZE;
                 break;
             case 1:
-                currentPattern = SIDE2_PATTERN;
-                patternSize = SIDE2_SIZE;
+                currentPattern = BACK;
+                patternSize = BACK_SIZE;
                 break;
             case 2:
-                currentPattern = SIDE3_PATTERN;
-                patternSize = SIDE3_SIZE;
+                currentPattern = LEFT;
+                patternSize = LEFT_SIZE;
                 break;
             case 3:
-                currentPattern = SIDE4_PATTERN;
-                patternSize = SIDE4_SIZE;
+                currentPattern = RIGHT;
+                patternSize = RIGHT_SIZE;
                 break;
         }
 
@@ -152,7 +164,7 @@ void CNCController::handleSerialCommand()
         char cmd = Serial.read();
 
         // For manual movement commands, we need to read the value
-        if (cmd == 'x' || cmd == 'y')
+        if (cmd == 'x' || cmd == 'y' || cmd == 'm' || cmd == 'n')
         {
             // Wait for numeric input
             delay(50);  // Small delay to allow buffer to fill
@@ -185,9 +197,18 @@ void CNCController::handleSerialCommand()
 
             if (systemState == IDLE)
             {
+                char commandType;
+                switch(cmd) {
+                    case 'x': commandType = 'X'; break;  // Relative X
+                    case 'y': commandType = 'Y'; break;  // Relative Y
+                    case 'm': commandType = 'M'; break;  // Absolute X
+                    case 'n': commandType = 'N'; break;  // Absolute Y
+                    default: commandType = cmd;
+                }
+                
                 Command manualMove(
-                    toupper(cmd),  // Convert to uppercase for Command type
-                    distance,      // Distance in inches
+                    commandType,    // Convert to uppercase for Command type
+                    distance,       // Distance/position in inches
                     false          // No spray during manual movement
                 );
                 executeCommand(manualMove);
@@ -204,79 +225,6 @@ void CNCController::handleSerialCommand()
             Serial.println(cmdDescription);
             return;
         }
-
-        // Echo received command and validate
-        Serial.print(F("Received command: "));
-        Serial.println(cmd);
-
-        bool validCommand = true;
-        String cmdDescription;
-
-        switch (cmd)
-        {
-            case 'H':
-            case 'h':
-                if (systemState == IDLE)
-                {
-                    systemState = HOMING_X;
-                    cmdDescription = F("Starting homing sequence");
-                }
-                else
-                {
-                    validCommand = false;
-                    cmdDescription = F("Can only home from IDLE state");
-                }
-                break;
-
-            case 'S':
-            case 's':
-                if (systemState == IDLE)
-                {
-                    currentSide = 0;
-                    currentCommand = 0;
-                    systemState = EXECUTING_PATTERN;
-                    cmdDescription = F("Starting pattern execution");
-                }
-                else
-                {
-                    validCommand = false;
-                    cmdDescription = F("Can only start from IDLE state");
-                }
-                break;
-
-            case 'E':
-            case 'e':
-                systemState = ERROR;
-                digitalWrite(PAINT_RELAY_PIN, HIGH);
-                stepperX.stop();
-                stepperY.stop();
-                stepperRotation.stop();
-                cmdDescription = F("Emergency stop activated");
-                break;
-
-            case 'R':
-            case 'r':
-                if (systemState == ERROR)
-                {
-                    systemState = IDLE;
-                    cmdDescription = F("System reset to IDLE");
-                }
-                else
-                {
-                    validCommand = false;
-                    cmdDescription = F("Can only reset from ERROR state");
-                }
-                break;
-
-            default:
-                validCommand = false;
-                cmdDescription = F("Unknown command");
-                break;
-        }
-
-        // Send command validation status
-        Serial.print(validCommand ? F("OK: ") : F("ERROR: "));
-        Serial.println(cmdDescription);
     }
 }
 
