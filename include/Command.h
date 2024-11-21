@@ -29,6 +29,8 @@ class Command
 // Command Creation Macros
 #define MOVE_X(dist, spray) Command('X', dist, spray)
 #define MOVE_Y(dist, spray) Command('Y', dist, spray)
+#define MOVETO_X(pos, spray) Command('M', pos, spray)
+#define MOVETO_Y(pos, spray) Command('N', pos, spray)
 #define ROTATE(deg) Command('R', deg, false)
 #define SPRAY_ON() Command('S', 0, true)
 #define SPRAY_OFF() Command('S', 0, false)

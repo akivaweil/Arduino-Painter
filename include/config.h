@@ -22,6 +22,6 @@ int Y_SPEED = 1000;
 int ROTATION_SPEED = 1000;
 int X_ACCEL = 5000;
 int Y_ACCEL = 5000;
-int ROTATION_ACCEL = 100;
+int ROTATION_ACCEL = 500;
 
 #endif

@@ -71,8 +71,20 @@ void CNCController::executeCommand(const Command& cmd)
             stepperY.move(cmd.value * Y_STEPS_PER_INCH);
             break;
 
+        case 'M':  // Absolute X movement
+            if (cmd.sprayOn)
+                digitalWrite(PAINT_RELAY_PIN, LOW);
+            stepperX.moveTo(cmd.value * X_STEPS_PER_INCH);
+            break;
+
+        case 'N':  // Absolute Y movement
+            if (cmd.sprayOn)
+                digitalWrite(PAINT_RELAY_PIN, LOW);
+            stepperY.moveTo(cmd.value * Y_STEPS_PER_INCH);
+            break;
+
         case 'R':
-            stepperRotation.move((cmd.value * STEPS_PER_ROTATION) / 360);
+            stepperRotation.moveTo((cmd.value * STEPS_PER_ROTATION) / 360);
             break;
 
         case 'S':
@@ -112,20 +124,20 @@ void CNCController::processPattern()
         switch (currentSide)
         {
             case 0:
-                currentPattern = SIDE1_PATTERN;
-                patternSize = SIDE1_SIZE;
+                currentPattern = FRONT;
+                patternSize = FRONT_SIZE;
                 break;
             case 1:
-                currentPattern = SIDE2_PATTERN;
-                patternSize = SIDE2_SIZE;
+                currentPattern = BACK;
+                patternSize = BACK_SIZE;
                 break;
             case 2:
-                currentPattern = SIDE3_PATTERN;
-                patternSize = SIDE3_SIZE;
+                currentPattern = LEFT;
+                patternSize = LEFT_SIZE;
                 break;
             case 3:
-                currentPattern = SIDE4_PATTERN;
-                patternSize = SIDE4_SIZE;
+                currentPattern = RIGHT;
+                patternSize = RIGHT_SIZE;
                 break;
         }
 
@@ -164,9 +176,65 @@ void CNCController::handleSerialCommand()
         char cmd = Serial.read();
 
         // For manual movement commands, we need to read the value
-        if (cmd == 'x' || cmd == 'y')
+        if (cmd == 'x' || cmd == 'y' || cmd == 'm' || cmd == 'n')
         {
-            // ... existing manual movement handling ...
+            // Wait for numeric input
+            delay(50);  // Small delay to allow buffer to fill
+            String value = "";
+
+            // Read until newline or timeout
+            unsigned long startTime = millis();
+            while (millis() - startTime < 1000)  // 1 second timeout
+            {
+                if (Serial.available())
+                {
+                    char c = Serial.read();
+                    if (c == '\n' || c == '\r')
+                        break;
+                    if (isDigit(c) || c == '-' || c == '.')
+                        value += c;
+                }
+            }
+
+            float distance = value.toFloat();
+
+            // Echo received command and validate
+            Serial.print(F("Manual movement: "));
+            Serial.print(cmd);
+            Serial.print(F(" = "));
+            Serial.println(distance);
+
+            bool validCommand = true;
+            String cmdDescription;
+
+            if (systemState == IDLE)
+            {
+                char commandType;
+                switch(cmd) {
+                    case 'x': commandType = 'X'; break;  // Relative X
+                    case 'y': commandType = 'Y'; break;  // Relative Y
+                    case 'm': commandType = 'M'; break;  // Absolute X
+                    case 'n': commandType = 'N'; break;  // Absolute Y
+                    default: commandType = cmd;
+                }
+                
+                Command manualMove(
+                    commandType,    // Convert to uppercase for Command type
+                    distance,       // Distance/position in inches
+                    false          // No spray during manual movement
+                );
+                executeCommand(manualMove);
+                cmdDescription = F("Executing manual movement");
+            }
+            else
+            {
+                validCommand = false;
+                cmdDescription = F("Can only move manually from IDLE state");
+            }
+
+            // Send command validation status
+            Serial.print(validCommand ? F("OK: ") : F("ERROR: "));
+            Serial.println(cmdDescription);
             return;
         }
 
@@ -230,120 +298,6 @@ void CNCController::handleSerialCommand()
                 {
                     validCommand = false;
                     cmdDescription = F("Can only reset from ERROR state");
-                }
-                break;
-
-            // New commands
-            case 'P':
-            case 'p':
-                if (systemState == IDLE)
-                {
-                    digitalWrite(PAINT_RELAY_PIN, LOW);   // Turn on spray
-                    delay(5000);                          // Prime for 5 seconds
-                    digitalWrite(PAINT_RELAY_PIN, HIGH);  // Turn off spray
-                    cmdDescription = F("Gun primed");
-                }
-                else
-                {
-                    validCommand = false;
-                    cmdDescription = F("Can only prime from IDLE state");
-                }
-                break;
-
-            case 'C':
-            case 'c':
-                if (systemState == IDLE)
-                {
-                    digitalWrite(PAINT_RELAY_PIN, LOW);  // Turn on spray
-                    delay(10000);                        // Clean for 10 seconds
-                    digitalWrite(PAINT_RELAY_PIN, HIGH);  // Turn off spray
-                    delay(5000);                          // Wait 5 seconds
-                    cmdDescription = F("Gun cleaned");
-                }
-                else
-                {
-                    validCommand = false;
-                    cmdDescription = F("Can only clean from IDLE state");
-                }
-                break;
-
-            case 'Q':
-            case 'q':
-                if (systemState == IDLE)
-                {
-                    // Quick calibration sequence
-                    systemState = HOMING_X;  // Start with homing
-                    cmdDescription = F("Starting quick calibration");
-                }
-                else
-                {
-                    validCommand = false;
-                    cmdDescription = F("Can only calibrate from IDLE state");
-                }
-                break;
-
-            // Individual side painting commands
-            case 'F':
-            case 'f':
-                if (systemState == IDLE)
-                {
-                    currentSide = 0;
-                    currentCommand = 0;
-                    systemState = EXECUTING_PATTERN;
-                    cmdDescription = F("Painting front side");
-                }
-                else
-                {
-                    validCommand = false;
-                    cmdDescription = F("Can only paint side from IDLE state");
-                }
-                break;
-
-            case 'I':
-            case 'i':
-                if (systemState == IDLE)
-                {
-                    currentSide = 1;
-                    currentCommand = 0;
-                    systemState = EXECUTING_PATTERN;
-                    cmdDescription = F("Painting right side");
-                }
-                else
-                {
-                    validCommand = false;
-                    cmdDescription = F("Can only paint side from IDLE state");
-                }
-                break;
-
-            case 'B':
-            case 'b':
-                if (systemState == IDLE)
-                {
-                    currentSide = 2;
-                    currentCommand = 0;
-                    systemState = EXECUTING_PATTERN;
-                    cmdDescription = F("Painting back side");
-                }
-                else
-                {
-                    validCommand = false;
-                    cmdDescription = F("Can only paint side from IDLE state");
-                }
-                break;
-
-            case 'L':
-            case 'l':
-                if (systemState == IDLE)
-                {
-                    currentSide = 3;
-                    currentCommand = 0;
-                    systemState = EXECUTING_PATTERN;
-                    cmdDescription = F("Painting left side");
-                }
-                else
-                {
-                    validCommand = false;
-                    cmdDescription = F("Can only paint side from IDLE state");
                 }
                 break;
 
