@@ -6,7 +6,7 @@
 #include "MaintenanceController.h"
 #include "MovementController.h"
 #include "PatternExecutor.h"
-#include "SerialCommandHandler.h"
+#include "SerialCommandHandler.h".
 #include "StateManager.h"
 
 class CNCController
@@ -17,12 +17,12 @@ class CNCController
     void loop();
 
    private:
-    StateManager stateManager;
-    MovementController movementController;
-    HomingController homingController;
-    PatternExecutor patternExecutor;
-    MaintenanceController maintenanceController;
-    SerialCommandHandler serialHandler;
+    MovementController movementController;        // First
+    StateManager stateManager;                    // Second
+    HomingController homingController;            // Uses movement controller
+    PatternExecutor patternExecutor;              // Uses movement controller
+    MaintenanceController maintenanceController;  // Uses movement controller
+    SerialCommandHandler serialHandler;           // Uses everything else
 };
 
 #endif

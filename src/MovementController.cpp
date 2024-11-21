@@ -72,14 +72,6 @@ void MovementController::update()
 
 bool MovementController::executeCommand(const Command& cmd)
 {
-    // Send acknowledgment that command is being executed
-    Serial.print(F("Executing movement: "));
-    Serial.print(cmd.type);
-    Serial.print(F(" Value: "));
-    Serial.print(cmd.value);
-    Serial.print(F(" Spray: "));
-    Serial.println(cmd.sprayOn ? "ON" : "OFF");
-
     updateSprayControl(cmd);
 
     switch (cmd.type)

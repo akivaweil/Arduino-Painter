@@ -16,14 +16,6 @@ PatternExecutor::PatternExecutor(MovementController& movement)
 
 void PatternExecutor::update()
 {
-    // Add debug logging
-    Serial.print(F("PatternExecutor update - Moving: "));
-    Serial.print(movementController.isMoving());
-    Serial.print(F(" CurrentSide: "));
-    Serial.print(currentSide);
-    Serial.print(F(" CurrentCmd: "));
-    Serial.println(currentCommand);
-
     // Don't process if movement is still in progress
     if (movementController.isMoving())
     {
