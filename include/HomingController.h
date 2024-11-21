@@ -5,6 +5,7 @@
 #include <Bounce2.h>
 
 #include "MovementController.h"
+#include "StateManager.h"
 
 class HomingController
 {
@@ -12,13 +13,14 @@ class HomingController
     HomingController(MovementController& movement);
     void setup();
     void update();
-
     bool isHoming() const;
     bool isHomed() const;
     void startHoming();
+    void setStateManager(StateManager* manager);
 
    private:
     MovementController& movementController;
+    StateManager* stateManager;
     Bounce xHomeSensor;
     Bounce yHomeSensor;
 

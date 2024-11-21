@@ -16,6 +16,14 @@ PatternExecutor::PatternExecutor(MovementController& movement)
 
 void PatternExecutor::update()
 {
+    // Add debug logging
+    Serial.print(F("PatternExecutor update - Moving: "));
+    Serial.print(movementController.isMoving());
+    Serial.print(F(" CurrentSide: "));
+    Serial.print(currentSide);
+    Serial.print(F(" CurrentCmd: "));
+    Serial.println(currentCommand);
+
     // Don't process if movement is still in progress
     if (movementController.isMoving())
     {
@@ -26,14 +34,20 @@ void PatternExecutor::update()
     Command* pattern = getCurrentPattern();
     int patternSize = getCurrentPatternSize();
 
+    // Add debug logging
+    Serial.print(F("Pattern size: "));
+    Serial.println(patternSize);
+
     // Process next command if available
     if (currentCommand < patternSize)
     {
+        Serial.println(F("Processing next command..."));
         processNextCommand();
     }
     else
     {
         // Pattern complete for current side
+        Serial.println(F("Pattern complete for current side"));
         currentCommand = 0;
 
         if (executingSingleSide)
@@ -89,22 +103,30 @@ void PatternExecutor::startSingleSide(int side)
 
 bool PatternExecutor::isExecuting() const
 {
-    return currentCommand > 0 || currentSide > 0 || executingSingleSide;
+    return currentCommand >= 0 || currentSide >= 0 || executingSingleSide;
 }
 
 Command* PatternExecutor::getCurrentPattern() const
 {
+    Serial.print(F("Getting pattern for side: "));
+    Serial.println(currentSide);
+
     switch (currentSide)
     {
         case 0:
+            Serial.println(F("Returning FRONT pattern"));
             return FRONT;
         case 1:
+            Serial.println(F("Returning BACK pattern"));
             return BACK;
         case 2:
+            Serial.println(F("Returning LEFT pattern"));
             return LEFT;
         case 3:
+            Serial.println(F("Returning RIGHT pattern"));
             return RIGHT;
         default:
+            Serial.println(F("ERROR: No pattern available"));
             return nullptr;
     }
 }

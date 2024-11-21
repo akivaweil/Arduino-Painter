@@ -11,6 +11,8 @@ CNCController::CNCController()
       serialHandler(stateManager, movementController, homingController,
                     patternExecutor, maintenanceController)
 {
+    // Inject StateManager into HomingController
+    homingController.setStateManager(&stateManager);
 }
 
 void CNCController::setup()

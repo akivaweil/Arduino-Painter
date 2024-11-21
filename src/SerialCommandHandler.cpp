@@ -1,4 +1,3 @@
-// SerialCommandHandler.cpp
 #include "SerialCommandHandler.h"
 
 #include <Arduino.h>
@@ -41,6 +40,12 @@ void SerialCommandHandler::processCommands()
     }
 
     char cmd = Serial.read();
+
+    // Ignore whitespace characters
+    if (isSpace(cmd))
+    {
+        return;
+    }
 
     // Convert to uppercase for comparison
     char upperCmd = toupper(cmd);
@@ -108,7 +113,8 @@ void SerialCommandHandler::handleSystemCommand(char cmd)
 {
     SystemState currentState = stateManager.getCurrentState();
     bool validCommand = true;
-    const char* responseMsg = "";
+    char responseBuffer[32];  // Buffer for formatting response messages
+    const char* responseMsg = responseBuffer;
 
     switch (cmd)
     {
@@ -143,8 +149,8 @@ void SerialCommandHandler::handleSystemCommand(char cmd)
         case 'F':  // Paint front
         case 'B':  // Paint back
         case 'L':  // Paint left
-        case 'R':
-        {  // Paint right
+        case 'R':  // Paint right
+        {
             if (currentState == IDLE)
             {
                 int side = (cmd == 'F')   ? 0
@@ -213,7 +219,8 @@ void SerialCommandHandler::handleSystemCommand(char cmd)
 
         default:
             validCommand = false;
-            responseMsg = "Unknown command";
+            snprintf(responseBuffer, sizeof(responseBuffer),
+                     "Unknown command: '%c'", cmd);
             break;
     }
 
@@ -222,6 +229,6 @@ void SerialCommandHandler::handleSystemCommand(char cmd)
 
 void SerialCommandHandler::sendResponse(bool success, const char* message)
 {
-    Serial.print(success ? F("OK: ") : F("ERROR: "));
+    Serial.print(success ? F("OK: ") : F("WARNING: "));
     Serial.println(message);
 }

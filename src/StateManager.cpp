@@ -35,8 +35,10 @@ bool StateManager::isValidTransition(SystemState newState) const
             return (newState == ERROR || newState == HOMING_Y);
 
         case HOMING_Y:
-            // From HOMING_Y, we can go to ERROR or start EXECUTING_PATTERN
-            return (newState == ERROR || newState == EXECUTING_PATTERN);
+            // From HOMING_Y, we can go to ERROR, IDLE, or start
+            // EXECUTING_PATTERN
+            return (newState == ERROR || newState == IDLE ||
+                    newState == EXECUTING_PATTERN);
 
         case EXECUTING_PATTERN:
             // From EXECUTING_PATTERN, we can go to ERROR or CYCLE_COMPLETE

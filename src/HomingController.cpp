@@ -1,15 +1,22 @@
+// HomingController.cpp
 #include "HomingController.h"
 
 #include "config.h"
 
 HomingController::HomingController(MovementController& movement)
     : movementController(movement),
+      stateManager(nullptr),
       xHomeSensor(),
       yHomeSensor(),
       homing(false),
       homeComplete(false),
       currentAxis(0)
 {
+}
+
+void HomingController::setStateManager(StateManager* manager)
+{
+    stateManager = manager;
 }
 
 void HomingController::setup()
@@ -43,6 +50,12 @@ void HomingController::update()
     else
     {
         processYHoming();
+
+        // If we just completed homing, ensure state transition
+        if (homeComplete && stateManager)
+        {
+            stateManager->setState(IDLE);
+        }
     }
 }
 
@@ -55,6 +68,11 @@ void HomingController::processXHoming()
 
         Serial.println(F("X-axis home position found"));
         currentAxis = 1;  // Move to Y-axis homing
+
+        if (stateManager)
+        {
+            stateManager->setState(HOMING_Y);
+        }
     }
     else if (!movementController.isMoving())
     {
@@ -69,18 +87,29 @@ void HomingController::processYHoming()
 {
     if (!yHomeSensor.read())  // Sensor triggered
     {
-        movementController.stopMovement();   // Stop immediately
-        movementController.setYPosition(0);  // Set current position as 0
+        // First stop movement
+        movementController.stopMovement();
+        movementController.setYPosition(0);
 
+        // Update status before state transition
         Serial.println(F("Y-axis home position found"));
         homing = false;
         homeComplete = true;
+
+        // Force an immediate update to ensure the movement completes
+        movementController.update();
+
+        // Now transition state and report completion
+        if (stateManager)
+        {
+            Serial.println(F("Homing sequence complete"));
+            stateManager->setState(IDLE);
+        }
     }
     else if (!movementController.isMoving())
     {
         // Create a command for continuous movement towards home
-        Command homeCmd('N', -999999,
-                        false);  // Use absolute move with large negative value
+        Command homeCmd('N', -999999, false);
         movementController.executeCommand(homeCmd);
     }
 }
@@ -93,6 +122,11 @@ void HomingController::startHoming()
         homeComplete = false;
         currentAxis = 0;
         Serial.println(F("Starting homing sequence"));
+
+        if (stateManager)
+        {
+            stateManager->setState(HOMING_X);
+        }
     }
 }
 
