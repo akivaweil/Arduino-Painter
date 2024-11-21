@@ -27,6 +27,7 @@ class SerialCommandHandler
 
     // Updated to accept String parameters instead of char
     void handleManualMovement(const String& command);
+    void handleSpeedCommand(const String& command);
     void handleSystemCommand(const String& command);
     void sendResponse(bool success, const char* message);
 };

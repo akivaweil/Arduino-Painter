@@ -11,10 +11,12 @@ enum SystemState
     EXECUTING_PATTERN,
     ERROR,
     CYCLE_COMPLETE,
-    PRIMING,       // New state for gun priming
-    CLEANING,      // New state for gun cleaning
-    CALIBRATING,   // New state for quick calibration
-    PAINTING_SIDE  // New state for single side painting
+    PRIMING,
+    CLEANING,
+    CALIBRATING,
+    PAINTING_SIDE,
+    STOPPED,
+    PAUSED,
 };
 
 #endif

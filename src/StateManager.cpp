@@ -22,42 +22,41 @@ bool StateManager::isValidTransition(SystemState newState) const
     switch (currentState)
     {
         case IDLE:
-            // From IDLE, we can transition to any state except ERROR and
-            // CYCLE_COMPLETE
             return (newState != ERROR && newState != CYCLE_COMPLETE);
 
         case ERROR:
-            // From ERROR, we can only transition back to IDLE
-            return (newState == IDLE);
+            return (newState == IDLE || newState == HOMING_X ||
+                    newState == STOPPED);
 
         case HOMING_X:
-            // From HOMING_X, we can only go to ERROR or HOMING_Y
-            return (newState == ERROR || newState == HOMING_Y);
+            return (newState == ERROR || newState == HOMING_Y ||
+                    newState == STOPPED);
 
         case HOMING_Y:
-            // From HOMING_Y, we can go to ERROR, IDLE, HOMED, or start
-            // EXECUTING_PATTERN
             return (newState == ERROR || newState == IDLE ||
                     newState == EXECUTING_PATTERN) ||
-                   newState == HOMED;
+                   newState == HOMED || newState == STOPPED;
         case HOMED:
             return (newState != ERROR || newState != CYCLE_COMPLETE ||
-                    newState != IDLE);
+                    newState != IDLE || newState == STOPPED);
 
         case EXECUTING_PATTERN:
-            // From EXECUTING_PATTERN, we can go to ERROR or CYCLE_COMPLETE
-            return (newState == ERROR || newState == CYCLE_COMPLETE);
+            return (newState == ERROR || newState == CYCLE_COMPLETE ||
+                    newState == HOMING_X || newState == STOPPED);
 
         case CYCLE_COMPLETE:
-            // From CYCLE_COMPLETE, we can only go back to IDLE
-            return (newState == IDLE);
+            return (newState == IDLE || newState == HOMING_X ||
+                    newState == STOPPED);
+
+        case STOPPED:
+            return (newState == HOMING_X);
 
         case PRIMING:
         case CLEANING:
         case CALIBRATING:
         case PAINTING_SIDE:
-            // From maintenance states, we can go to ERROR or back to IDLE
-            return (newState == ERROR || newState == IDLE);
+            return (newState == ERROR || newState == IDLE ||
+                    newState == HOMING_X || newState == STOPPED);
 
         default:
             return false;
@@ -104,6 +103,13 @@ void StateManager::reportStateChange()
                 break;
             case HOMED:
                 Serial.println(F("HOMED"));
+                break;
+            case PAUSED:
+                Serial.println(F("PAUSED"));
+                break;
+            case STOPPED:
+                Serial.println(F("STOPPED"));
+                break;
         }
     }
 }

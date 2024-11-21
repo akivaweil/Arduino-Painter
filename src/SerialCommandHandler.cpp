@@ -1,6 +1,7 @@
 #include "SerialCommandHandler.h"
 
 #include <Arduino.h>
+#include <config.h>
 
 SerialCommandHandler::SerialCommandHandler(StateManager& state,
                                            MovementController& movement,
@@ -32,6 +33,7 @@ void SerialCommandHandler::setup()
     Serial.println(F("  MOVE_Y <dist> - Relative Y movement"));
     Serial.println(F("  GOTO_X <pos> - Absolute X movement"));
     Serial.println(F("  GOTO_Y <pos> - Absolute Y movement"));
+    Serial.println(F("  SPEED <side> <value> - Set speed for side (0-100)"));
 }
 
 void SerialCommandHandler::processCommands()
@@ -41,11 +43,8 @@ void SerialCommandHandler::processCommands()
         return;
     }
 
-    // Read the full command string
     String command = Serial.readStringUntil('\n');
-    command.trim();  // Remove leading/trailing whitespace
-
-    // Convert to uppercase for comparison
+    command.trim();
     command.toUpperCase();
 
     // Handle movement commands separately
@@ -55,8 +54,58 @@ void SerialCommandHandler::processCommands()
         return;
     }
 
-    // Process system commands
+    // Handle speed commands separately
+    if (command.startsWith("SPEED "))
+    {
+        handleSpeedCommand(command);
+        return;
+    }
+
+    // Process other system commands
     handleSystemCommand(command);
+}
+
+void SerialCommandHandler::handleSpeedCommand(const String& command)
+{
+    // Split command into parts (SPEED SIDE VALUE)
+    int firstSpace = command.indexOf(' ');
+    int secondSpace = command.indexOf(' ', firstSpace + 1);
+
+    if (firstSpace == -1 || secondSpace == -1)
+    {
+        sendResponse(false, "Invalid speed command format");
+        return;
+    }
+
+    String side = command.substring(firstSpace + 1, secondSpace);
+    float value = command.substring(secondSpace + 1).toFloat();
+
+    // Validate speed value (0-100)
+    if (value < 0 || value > 100)
+    {
+        sendResponse(false, "Speed must be between 0 and 100");
+        return;
+    }
+
+    // Convert percentage to actual speed value
+    float maxSpeed = X_SPEED;  // From config.h
+    float targetSpeed = (value / 100.0) * maxSpeed;
+
+    // Set the speed based on the side
+    if (side == "FRONT" || side == "BACK")
+    {
+        movementController.setYSpeed(targetSpeed);
+        sendResponse(true, "Y-axis speed updated");
+    }
+    else if (side == "LEFT" || side == "RIGHT")
+    {
+        movementController.setXSpeed(targetSpeed);
+        sendResponse(true, "X-axis speed updated");
+    }
+    else
+    {
+        sendResponse(false, "Invalid side specified");
+    }
 }
 
 void SerialCommandHandler::handleManualMovement(const String& command)
@@ -123,17 +172,21 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
 
     if (command == "HOME")
     {
-        if (currentState == IDLE || currentState == HOMED)
+        // For HOME command, first handle like a STOP command if system is
+        // executing
+        if (currentState != IDLE && currentState != HOMED)
         {
-            homingController.startHoming();
-            stateManager.setState(HOMING_X);
-            responseMsg = "Starting homing sequence";
+            movementController.stop();
+            patternExecutor.stop();
+            stateManager.setState(STOPPED);
+            Serial.println(F("Stopping current operation before homing"));
+            delay(100);  // Brief delay to ensure stop is processed
         }
-        else
-        {
-            validCommand = false;
-            responseMsg = "Can only home from IDLE or HOMED state";
-        }
+
+        // Now proceed with homing sequence
+        homingController.startHoming();
+        stateManager.setState(HOMING_X);
+        responseMsg = "Starting homing sequence";
     }
     else if (command == "START")
     {
@@ -213,8 +266,8 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
     else if (command == "STOP")
     {
         movementController.stop();
-        patternExecutor.stop();  // Add this line
-        stateManager.setState(ERROR);
+        patternExecutor.stop();
+        stateManager.setState(STOPPED);
         responseMsg = "stop activated";
     }
     else
