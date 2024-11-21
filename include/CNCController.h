@@ -16,12 +16,17 @@ class CNCController
     void loop();
     void executeCommand(const Command& cmd);
     void processPattern();
+    void primeGun();
+    void cleanGun();
+    void quickCalibrate();
+    void paintSide(int side);  // 0=front, 1=right, 2=back, 3=left
 
    private:
     SystemState systemState;
     bool motorsRunning;
     int currentSide;
     int currentCommand;
+    int targetSide;  // For single side painting
 
     Command lastExecutedCommand;
     bool awaitingCompletion = false;
@@ -35,6 +40,11 @@ class CNCController
     void handleSerialCommand();
     void updateMotors();
     void processSystemState();
+
+    void executePrimeSequence();
+    void executeCleanSequence();
+    void executeCalibrationSequence();
+    void executeSingleSidePaint(int side);
 };
 
 #endif
