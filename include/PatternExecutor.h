@@ -14,6 +14,7 @@ class PatternExecutor
     void startPattern();
     void startSingleSide(int side);
     bool isExecuting() const;
+    void stop();
 
    private:
     MovementController& movementController;
@@ -21,6 +22,7 @@ class PatternExecutor
     int currentCommand;
     int targetSide;
     bool executingSingleSide;
+    bool stopped;
 
     Command* getCurrentPattern() const;
     int getCurrentPatternSize() const;

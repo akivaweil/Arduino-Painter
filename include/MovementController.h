@@ -14,7 +14,7 @@ class MovementController
 
     bool executeCommand(const Command& cmd);
     bool isMoving() const;
-    void emergencyStop();
+    void stop();
 
     // Position control methods
     void stopMovement();               // New method for immediate stop
@@ -29,6 +29,9 @@ class MovementController
     // Unit conversion methods
     float stepsToInches(long steps, long stepsPerInch) const;
     float stepsToAngle(long steps) const;
+
+    void setXSpeed(float acceleration);
+    void setYSpeed(float acceleration);
 
    private:
     AccelStepper stepperX;

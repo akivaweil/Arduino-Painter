@@ -35,10 +35,14 @@ bool StateManager::isValidTransition(SystemState newState) const
             return (newState == ERROR || newState == HOMING_Y);
 
         case HOMING_Y:
-            // From HOMING_Y, we can go to ERROR, IDLE, or start
+            // From HOMING_Y, we can go to ERROR, IDLE, HOMED, or start
             // EXECUTING_PATTERN
             return (newState == ERROR || newState == IDLE ||
-                    newState == EXECUTING_PATTERN);
+                    newState == EXECUTING_PATTERN) ||
+                   newState == HOMED;
+        case HOMED:
+            return (newState != ERROR || newState != CYCLE_COMPLETE ||
+                    newState != IDLE);
 
         case EXECUTING_PATTERN:
             // From EXECUTING_PATTERN, we can go to ERROR or CYCLE_COMPLETE
@@ -98,6 +102,8 @@ void StateManager::reportStateChange()
             case PAINTING_SIDE:
                 Serial.println(F("PAINTING_SIDE"));
                 break;
+            case HOMED:
+                Serial.println(F("HOMED"));
         }
     }
 }

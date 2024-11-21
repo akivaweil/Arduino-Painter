@@ -4,8 +4,8 @@
 Command FRONT[] = {
     // Initial Movement
     MOVETO_X(3.5, false),  // →3.5→ - Initial offset
-    MOVETO_Y(0, false),  // 
-    ROTATE(0),  // Rotate tray
+    MOVETO_Y(0, false),    //
+    ROTATE(0),             // Rotate tray
 
     // Row 1
     SPRAY_ON(),           // ● - Start spray
@@ -58,9 +58,9 @@ Command FRONT[] = {
 
 Command BACK[] = {
 
-    MOVETO_X(3.5, false),  // X offset
+    MOVETO_X(3.5, false),    // X offset
     MOVETO_Y(33.28, false),  // Y offset
-    ROTATE(180),  // Rotate tray
+    ROTATE(180),             // Rotate tray
 
     // Row 1
     SPRAY_ON(),            // ● - Start spray
@@ -116,9 +116,9 @@ Command BACK[] = {
 Command LEFT[] = {
     // Initial Movement
 
-    MOVE_X(0, false),  // 
+    MOVETO_X(0, false),    //
     MOVETO_Y(3.5, false),  // ↑3.5↑ Initial offset
-    ROTATE(270),  // Rotate tray
+    ROTATE(270),           // Rotate tray
 
     // Row 1
     SPRAY_ON(),            // ● - Start spray
@@ -159,10 +159,10 @@ Command LEFT[] = {
 
 Command RIGHT[] = {
 
-    MOVE_X(0, false),  // 
+    MOVE_X(0, false),        //
     MOVETO_Y(26.49, false),  // ↑3.5↑ Initial offset
-    ROTATE(90),  // Rotate tray
-    
+    ROTATE(90),              // Rotate tray
+
     // Row 1
     SPRAY_ON(),             // ● - Start spray
     MOVE_X(33.28, true),    // →33.28→ - Move right with spray

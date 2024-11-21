@@ -18,18 +18,20 @@ SerialCommandHandler::SerialCommandHandler(StateManager& state,
 void SerialCommandHandler::setup()
 {
     Serial.println(F("Available Commands:"));
-    Serial.println(F("  H/h - Home machine"));
-    Serial.println(F("  S/s - Start full pattern"));
-    Serial.println(F("  F/f - Paint front side"));
-    Serial.println(F("  B/b - Paint back side"));
-    Serial.println(F("  L/l - Paint left side"));
-    Serial.println(F("  R/r - Paint right side"));
-    Serial.println(F("  P/p - Prime spray gun"));
-    Serial.println(F("  C/c - Clean spray gun"));
-    Serial.println(F("  Q/q - Quick calibration"));
-    Serial.println(F("  E/e - Emergency stop"));
-    Serial.println(F("  x/y <dist> - Relative movement"));
-    Serial.println(F("  m/n <pos> - Absolute movement"));
+    Serial.println(F("  HOME       - Home machine"));
+    Serial.println(F("  START      - Start full pattern"));
+    Serial.println(F("  FRONT      - Paint front side"));
+    Serial.println(F("  BACK       - Paint back side"));
+    Serial.println(F("  LEFT       - Paint left side"));
+    Serial.println(F("  RIGHT      - Paint right side"));
+    Serial.println(F("  PRIME      - Prime spray gun"));
+    Serial.println(F("  CLEAN      - Clean spray gun"));
+    Serial.println(F("  CALIBRATE  - Quick calibration"));
+    Serial.println(F("  STOP       - stop"));
+    Serial.println(F("  MOVE_X <dist> - Relative X movement"));
+    Serial.println(F("  MOVE_Y <dist> - Relative Y movement"));
+    Serial.println(F("  GOTO_X <pos> - Absolute X movement"));
+    Serial.println(F("  GOTO_Y <pos> - Absolute Y movement"));
 }
 
 void SerialCommandHandler::processCommands()
@@ -39,29 +41,25 @@ void SerialCommandHandler::processCommands()
         return;
     }
 
-    char cmd = Serial.read();
-
-    // Ignore whitespace characters
-    if (isSpace(cmd))
-    {
-        return;
-    }
+    // Read the full command string
+    String command = Serial.readStringUntil('\n');
+    command.trim();  // Remove leading/trailing whitespace
 
     // Convert to uppercase for comparison
-    char upperCmd = toupper(cmd);
+    command.toUpperCase();
 
-    // Handle manual movement commands separately
-    if (cmd == 'x' || cmd == 'y' || cmd == 'm' || cmd == 'n')
+    // Handle movement commands separately
+    if (command.startsWith("MOVE_") || command.startsWith("GOTO_"))
     {
-        handleManualMovement(cmd);
+        handleManualMovement(command);
         return;
     }
 
     // Process system commands
-    handleSystemCommand(upperCmd);
+    handleSystemCommand(command);
 }
 
-void SerialCommandHandler::handleManualMovement(char cmd)
+void SerialCommandHandler::handleManualMovement(const String& command)
 {
     // Only allow manual movement in IDLE state
     if (stateManager.getCurrentState() != IDLE)
@@ -70,25 +68,16 @@ void SerialCommandHandler::handleManualMovement(char cmd)
         return;
     }
 
-    // Wait for numeric input
-    delay(50);  // Small delay to allow buffer to fill
-    String value = "";
-    unsigned long startTime = millis();
-
-    // Read until newline or timeout
-    while (millis() - startTime < 1000)
-    {  // 1 second timeout
-        if (Serial.available())
-        {
-            char c = Serial.read();
-            if (c == '\n' || c == '\r')
-                break;
-            if (isDigit(c) || c == '-' || c == '.')
-                value += c;
-        }
+    // Split command into parts
+    int spaceIndex = command.indexOf(' ');
+    if (spaceIndex == -1)
+    {
+        sendResponse(false, "Invalid movement command format");
+        return;
     }
 
-    float distance = value.toFloat();
+    String cmd = command.substring(0, spaceIndex);
+    float distance = command.substring(spaceIndex + 1).toFloat();
 
     // Echo received command
     Serial.print(F("Manual movement: "));
@@ -96,8 +85,24 @@ void SerialCommandHandler::handleManualMovement(char cmd)
     Serial.print(F(" = "));
     Serial.println(distance);
 
+    // Convert command to single character for movement controller
+    char moveType;
+    if (cmd == "MOVE_X")
+        moveType = 'X';
+    else if (cmd == "MOVE_Y")
+        moveType = 'Y';
+    else if (cmd == "GOTO_X")
+        moveType = 'M';
+    else if (cmd == "GOTO_Y")
+        moveType = 'N';
+    else
+    {
+        sendResponse(false, "Invalid movement command");
+        return;
+    }
+
     // Create and execute movement command
-    Command manualMove(toupper(cmd), distance,
+    Command manualMove(moveType, distance,
                        false);  // No spray during manual movement
     if (movementController.executeCommand(manualMove))
     {
@@ -109,119 +114,114 @@ void SerialCommandHandler::handleManualMovement(char cmd)
     }
 }
 
-void SerialCommandHandler::handleSystemCommand(char cmd)
+void SerialCommandHandler::handleSystemCommand(const String& command)
 {
     SystemState currentState = stateManager.getCurrentState();
     bool validCommand = true;
     char responseBuffer[32];  // Buffer for formatting response messages
     const char* responseMsg = responseBuffer;
 
-    switch (cmd)
+    if (command == "HOME")
     {
-        case 'H':  // Home
-            if (currentState == IDLE)
-            {
-                homingController.startHoming();
-                stateManager.setState(HOMING_X);
-                responseMsg = "Starting homing sequence";
-            }
-            else
-            {
-                validCommand = false;
-                responseMsg = "Can only home from IDLE state";
-            }
-            break;
-
-        case 'S':  // Start full pattern
-            if (currentState == IDLE)
-            {
-                patternExecutor.startPattern();
-                stateManager.setState(EXECUTING_PATTERN);
-                responseMsg = "Starting full pattern";
-            }
-            else
-            {
-                validCommand = false;
-                responseMsg = "Can only start pattern from IDLE state";
-            }
-            break;
-
-        case 'F':  // Paint front
-        case 'B':  // Paint back
-        case 'L':  // Paint left
-        case 'R':  // Paint right
+        if (currentState == IDLE || currentState == HOMED)
         {
-            if (currentState == IDLE)
-            {
-                int side = (cmd == 'F')   ? 0
-                           : (cmd == 'B') ? 1
-                           : (cmd == 'L') ? 2
-                                          : 3;
-                patternExecutor.startSingleSide(side);
-                stateManager.setState(PAINTING_SIDE);
-                responseMsg = "Starting single side pattern";
-            }
-            else
-            {
-                validCommand = false;
-                responseMsg = "Can only start painting from IDLE state";
-            }
-            break;
+            homingController.startHoming();
+            stateManager.setState(HOMING_X);
+            responseMsg = "Starting homing sequence";
         }
-
-        case 'P':  // Prime gun
-            if (currentState == IDLE)
-            {
-                maintenanceController.startPriming();
-                stateManager.setState(PRIMING);
-                responseMsg = "Starting prime sequence";
-            }
-            else
-            {
-                validCommand = false;
-                responseMsg = "Can only prime from IDLE state";
-            }
-            break;
-
-        case 'C':  // Clean gun
-            if (currentState == IDLE)
-            {
-                maintenanceController.startCleaning();
-                stateManager.setState(CLEANING);
-                responseMsg = "Starting clean sequence";
-            }
-            else
-            {
-                validCommand = false;
-                responseMsg = "Can only clean from IDLE state";
-            }
-            break;
-
-        case 'Q':  // Quick calibration
-            if (currentState == IDLE)
-            {
-                maintenanceController.startCalibration();
-                stateManager.setState(CALIBRATING);
-                responseMsg = "Starting calibration";
-            }
-            else
-            {
-                validCommand = false;
-                responseMsg = "Can only calibrate from IDLE state";
-            }
-            break;
-
-        case 'E':  // Emergency stop
-            movementController.emergencyStop();
-            stateManager.setState(ERROR);
-            responseMsg = "Emergency stop activated";
-            break;
-
-        default:
+        else
+        {
             validCommand = false;
-            snprintf(responseBuffer, sizeof(responseBuffer),
-                     "Unknown command: '%c'", cmd);
-            break;
+            responseMsg = "Can only home from IDLE or HOMED state";
+        }
+    }
+    else if (command == "START")
+    {
+        if (currentState == HOMED)
+        {
+            patternExecutor.startPattern();
+            stateManager.setState(EXECUTING_PATTERN);
+            responseMsg = "Starting full pattern";
+        }
+        else
+        {
+            validCommand = false;
+            responseMsg = "Can only start pattern from HOMED state";
+        }
+    }
+    else if (command == "FRONT" || command == "BACK" || command == "LEFT" ||
+             command == "RIGHT")
+    {
+        if (currentState == HOMED)
+        {
+            int side = (command == "FRONT")  ? 0
+                       : (command == "BACK") ? 1
+                       : (command == "LEFT") ? 2
+                                             : 3;
+            patternExecutor.startSingleSide(side);
+            stateManager.setState(PAINTING_SIDE);
+            responseMsg = "Starting single side pattern";
+        }
+        else
+        {
+            validCommand = false;
+            responseMsg = "Can only start painting from HOMED state";
+        }
+    }
+    else if (command == "PRIME")
+    {
+        if (currentState == IDLE || currentState == HOMED)
+        {
+            maintenanceController.startPriming();
+            stateManager.setState(PRIMING);
+            responseMsg = "Starting prime sequence";
+        }
+        else
+        {
+            validCommand = false;
+            responseMsg = "Can only prime from IDLE state";
+        }
+    }
+    else if (command == "CLEAN")
+    {
+        if (currentState == IDLE || currentState == HOMED)
+        {
+            maintenanceController.startCleaning();
+            stateManager.setState(CLEANING);
+            responseMsg = "Starting clean sequence";
+        }
+        else
+        {
+            validCommand = false;
+            responseMsg = "Can only clean from IDLE state";
+        }
+    }
+    else if (command == "CALIBRATE")
+    {
+        if (currentState == IDLE || currentState == HOMED)
+        {
+            maintenanceController.startCalibration();
+            stateManager.setState(CALIBRATING);
+            responseMsg = "Starting calibration";
+        }
+        else
+        {
+            validCommand = false;
+            responseMsg = "Can only calibrate from IDLE state";
+        }
+    }
+    else if (command == "STOP")
+    {
+        movementController.stop();
+        patternExecutor.stop();  // Add this line
+        stateManager.setState(ERROR);
+        responseMsg = "stop activated";
+    }
+    else
+    {
+        validCommand = false;
+        snprintf(responseBuffer, sizeof(responseBuffer),
+                 "Unknown command: '%s'", command.c_str());
     }
 
     sendResponse(validCommand, responseMsg);

@@ -7,17 +7,18 @@
 
 PatternExecutor::PatternExecutor(MovementController& movement)
     : movementController(movement),
-      currentSide(0),
-      currentCommand(0),
+      currentSide(-1),
+      currentCommand(-1),
       targetSide(-1),
-      executingSingleSide(false)
+      executingSingleSide(false),
+      stopped(false)  // Initialize new member
 {
 }
 
 void PatternExecutor::update()
 {
-    // Don't process if movement is still in progress
-    if (movementController.isMoving())
+    // Don't process if stopped or movement is still in progress
+    if (stopped || movementController.isMoving())
     {
         return;
     }
@@ -69,6 +70,7 @@ void PatternExecutor::update()
 
 void PatternExecutor::startPattern()
 {
+    stopped = false;  // Clear stopped flag when starting new pattern
     currentSide = 0;
     currentCommand = 0;
     executingSingleSide = false;
@@ -80,6 +82,7 @@ void PatternExecutor::startSingleSide(int side)
 {
     if (side >= 0 && side < 4)
     {
+        stopped = false;  // Clear stopped flag when starting new pattern
         currentSide = side;
         currentCommand = 0;
         executingSingleSide = true;
@@ -165,4 +168,15 @@ void PatternExecutor::processNextCommand()
     {
         Serial.println(F("ERROR: Failed to execute pattern command"));
     }
+}
+
+void PatternExecutor::stop()
+{
+    // Reset all execution state
+    currentSide = -1;
+    currentCommand = -1;
+    targetSide = -1;
+    executingSingleSide = false;
+    stopped = true;
+    Serial.println(F("Pattern execution stopped"));
 }

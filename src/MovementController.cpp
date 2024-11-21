@@ -123,7 +123,7 @@ void MovementController::updateSprayControl(const Command& cmd)
 
 bool MovementController::isMoving() const { return motorsRunning; }
 
-void MovementController::emergencyStop()
+void MovementController::stop()
 {
     stepperX.stop();
     stepperY.stop();
@@ -178,3 +178,7 @@ void MovementController::setYPosition(long position)
     stepperY.setCurrentPosition(position);
     updatePositionCache();
 }
+
+void MovementController::setXSpeed(float speed) { stepperX.setMaxSpeed(speed); }
+
+void MovementController::setYSpeed(float speed) { stepperY.setMaxSpeed(speed); }

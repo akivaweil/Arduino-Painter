@@ -54,7 +54,7 @@ void HomingController::update()
         // If we just completed homing, ensure state transition
         if (homeComplete && stateManager)
         {
-            stateManager->setState(IDLE);
+            stateManager->setState(HOMED);
         }
     }
 }
@@ -65,6 +65,8 @@ void HomingController::processXHoming()
     {
         movementController.stopMovement();   // Stop immediately
         movementController.setXPosition(0);  // Set current position as 0
+        movementController.setXSpeed(
+            X_SPEED);  // Restore normal speed after homing complete
 
         Serial.println(F("X-axis home position found"));
         currentAxis = 1;  // Move to Y-axis homing
@@ -76,7 +78,10 @@ void HomingController::processXHoming()
     }
     else if (!movementController.isMoving())
     {
-        // Create a command for continuous movement towards home
+        // Create a command for continuous movement towards homwe at slower
+        // speed
+        movementController.setXSpeed(
+            HOMING_SPEED);  // Use defined constant for homing
         Command homeCmd('M', -999999,
                         false);  // Use absolute move with large negative value
         movementController.executeCommand(homeCmd);
@@ -90,6 +95,8 @@ void HomingController::processYHoming()
         // First stop movement
         movementController.stopMovement();
         movementController.setYPosition(0);
+        movementController.setYSpeed(
+            Y_SPEED);  // Restore normal speed after homing complete
 
         // Update status before state transition
         Serial.println(F("Y-axis home position found"));
@@ -103,12 +110,14 @@ void HomingController::processYHoming()
         if (stateManager)
         {
             Serial.println(F("Homing sequence complete"));
-            stateManager->setState(IDLE);
+            stateManager->setState(HOMED);
         }
     }
     else if (!movementController.isMoving())
     {
-        // Create a command for continuous movement towards home
+        // Create a command for continuous movement towards home at slower speed
+        movementController.setYSpeed(
+            HOMING_SPEED);  // Use defined constant for homing
         Command homeCmd('N', -999999, false);
         movementController.executeCommand(homeCmd);
     }

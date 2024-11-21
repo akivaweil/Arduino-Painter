@@ -27,6 +27,7 @@ extern int ROTATION_SPEED;  // Steps per second
 extern int X_ACCEL;         // Steps per second per second
 extern int Y_ACCEL;         // Steps per second per second
 extern int ROTATION_ACCEL;  // Steps per second per second
+extern int HOMING_SPEED;    // Steps per seconds
 
 // Default values for speeds and acceleration
 // These should be defined in ONE cpp file (e.g., CNCController.cpp)
