@@ -121,6 +121,7 @@ void SerialCommandHandler::handleRotationCommand(const String& command)
     }
 }
 
+// Modify SerialCommandHandler.cpp handleSpeedCommand
 void SerialCommandHandler::handleSpeedCommand(const String& command)
 {
     // Split command into parts (SPEED SIDE VALUE)
@@ -143,25 +144,9 @@ void SerialCommandHandler::handleSpeedCommand(const String& command)
         return;
     }
 
-    // Convert percentage to actual speed value
-    float maxSpeed = X_SPEED;  // From config.h
-    float targetSpeed = (value / 100.0) * maxSpeed;
-
-    // Set the speed based on the side
-    if (side == "FRONT" || side == "BACK")
-    {
-        movementController.setYSpeed(targetSpeed);
-        sendResponse(true, "Y-axis speed updated");
-    }
-    else if (side == "LEFT" || side == "RIGHT")
-    {
-        movementController.setXSpeed(targetSpeed);
-        sendResponse(true, "X-axis speed updated");
-    }
-    else
-    {
-        sendResponse(false, "Invalid side specified");
-    }
+    // Store the speed for the specified pattern
+    movementController.setPatternSpeed(side, value);
+    sendResponse(true, "Pattern speed updated");
 }
 
 void SerialCommandHandler::handleManualMovement(const String& command)

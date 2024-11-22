@@ -39,11 +39,20 @@ class MovementController
     float getCurrentRotationAngle() const;
     void setStateManager(StateManager* manager) { stateManager = manager; }
 
+    void setPatternSpeed(const String& pattern, float speedPercentage);
+    void applyPatternSpeed(const String& pattern);
+    void resetToDefaultSpeed();
+
    private:
     AccelStepper stepperX;
     AccelStepper stepperY;
     AccelStepper stepperRotation;
     StateManager* stateManager;
+
+    float frontSpeed;
+    float backSpeed;
+    float leftSpeed;
+    float rightSpeed;
 
     // Cache current positions to avoid const issues
     mutable long lastXPos;

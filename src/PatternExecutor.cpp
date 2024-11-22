@@ -48,6 +48,8 @@ void PatternExecutor::update()
             Serial.println(F("Single side pattern complete"));
             executingSingleSide = false;
             targetSide = -1;
+            stateManager->setState(
+                HOMED);  // Return to HOMED state after single side
         }
         else
         {
@@ -56,8 +58,14 @@ void PatternExecutor::update()
             if (currentSide >= 4)
             {
                 Serial.println(F("Full pattern complete"));
-                currentSide = 0;
+                // Reset pattern execution state
+                currentSide = -1;
+                currentCommand = -1;
                 executingSingleSide = false;
+                stateManager->setState(
+                    CYCLE_COMPLETE);  // Transition to IDLE after full pattern
+                // Reset speeds to default after pattern completion
+                movementController.resetToDefaultSpeed();
             }
             else
             {
@@ -152,13 +160,15 @@ void PatternExecutor::processNextCommand()
         return;
     }
 
+    // Apply pattern-specific speed before executing command
+    movementController.applyPatternSpeed(getCurrentPatternName());
+
     // Execute the next command in sequence
     Command currentCmd = pattern[currentCommand];
     if (movementController.executeCommand(currentCmd))
     {
         currentCommand++;
 
-        // Log progress for debugging
         Serial.print(F("Executing command "));
         Serial.print(currentCommand);
         Serial.print(F(" of "));
@@ -179,4 +189,21 @@ void PatternExecutor::stop()
     executingSingleSide = false;
     stopped = true;
     Serial.println(F("Pattern execution stopped"));
+}
+
+String PatternExecutor::getCurrentPatternName() const
+{
+    switch (currentSide)
+    {
+        case 0:
+            return "FRONT";
+        case 1:
+            return "BACK";
+        case 2:
+            return "LEFT";
+        case 3:
+            return "RIGHT";
+        default:
+            return "";
+    }
 }

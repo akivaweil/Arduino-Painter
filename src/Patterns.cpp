@@ -118,7 +118,7 @@ Command LEFT[] = {
 
     MOVETO_X(0, false),    //
     MOVETO_Y(3.5, false),  // ↑3.5↑ Initial offset
-    ROTATE(90),            // Rotate tray
+    ROTATE(-90),           // Rotate tray
 
     // Row 1
     SPRAY_ON(),            // ● - Start spray

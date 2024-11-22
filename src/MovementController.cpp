@@ -10,7 +10,11 @@ MovementController::MovementController()
       stepperRotation(AccelStepper::DRIVER, ROTATION_STEP_PIN,
                       ROTATION_DIR_PIN),
       motorsRunning(false),
-      stateManager(nullptr)  // Initialize stateManager pointer
+      stateManager(nullptr),
+      frontSpeed(X_SPEED),
+      backSpeed(X_SPEED),
+      leftSpeed(X_SPEED),
+      rightSpeed(X_SPEED)
 {
 }
 
@@ -39,6 +43,56 @@ void MovementController::configureMotors()
     stepperRotation.setMaxSpeed(ROTATION_SPEED);
     stepperRotation.setAcceleration(ROTATION_ACCEL);
     stepperRotation.setPinsInverted(false);  // Adjust based on your setup
+}
+
+void MovementController::setPatternSpeed(const String& pattern,
+                                         float speedPercentage)
+{
+    // Convert percentage to actual speed
+    float targetSpeed = (speedPercentage / 100.0) * X_SPEED;
+
+    // Store speed for appropriate pattern
+    if (pattern == "FRONT")
+    {
+        frontSpeed = targetSpeed;
+    }
+    else if (pattern == "BACK")
+    {
+        backSpeed = targetSpeed;
+    }
+    else if (pattern == "LEFT")
+    {
+        leftSpeed = targetSpeed;
+    }
+    else if (pattern == "RIGHT")
+    {
+        rightSpeed = targetSpeed;
+    }
+}
+
+void MovementController::applyPatternSpeed(const String& pattern)
+{
+    if (pattern == "FRONT")
+    {
+        stepperX.setMaxSpeed(frontSpeed);
+    }
+    else if (pattern == "BACK")
+    {
+        stepperX.setMaxSpeed(backSpeed);
+    }
+    else if (pattern == "LEFT")
+    {
+        stepperX.setMaxSpeed(leftSpeed);
+    }
+    else if (pattern == "RIGHT")
+    {
+        stepperX.setMaxSpeed(rightSpeed);
+    }
+}
+
+void MovementController::resetToDefaultSpeed()
+{
+    stepperX.setMaxSpeed(X_SPEED);
 }
 
 void MovementController::updatePositionCache() const
