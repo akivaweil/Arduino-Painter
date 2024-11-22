@@ -11,7 +11,6 @@ MovementController::MovementController()
                       ROTATION_DIR_PIN),
       motorsRunning(false),
       stateManager(nullptr),
-      patternExecutor(nullptr),  // Initialize the new member
       frontSpeed(X_SPEED),
       backSpeed(X_SPEED),
       leftSpeed(X_SPEED),
@@ -52,13 +51,16 @@ void MovementController::setPatternSpeed(const String& pattern,
     // Convert percentage to actual speed (0-100% maps to 0-X_SPEED)
     float targetSpeed = (speedPercentage / 100.0) * X_SPEED;
 
+    SystemState currentState = stateManager->getCurrentState();
+    bool isPatternActive =
+        (currentState == EXECUTING_PATTERN || currentState == PAINTING_SIDE);
+
     // Store speed for appropriate pattern
     if (pattern == "FRONT")
     {
         frontSpeed = targetSpeed;
-        // If we're currently executing the front pattern, apply immediately
-        if (patternExecutor &&
-            patternExecutor->getCurrentPatternName() == "FRONT")
+        // Apply immediately if we're in pattern execution
+        if (stateManager && isPatternActive)
         {
             stepperX.setMaxSpeed(targetSpeed);
         }
@@ -66,8 +68,7 @@ void MovementController::setPatternSpeed(const String& pattern,
     else if (pattern == "BACK")
     {
         backSpeed = targetSpeed;
-        if (patternExecutor &&
-            patternExecutor->getCurrentPatternName() == "BACK")
+        if (stateManager && isPatternActive)
         {
             stepperX.setMaxSpeed(targetSpeed);
         }
@@ -75,8 +76,7 @@ void MovementController::setPatternSpeed(const String& pattern,
     else if (pattern == "LEFT")
     {
         leftSpeed = targetSpeed;
-        if (patternExecutor &&
-            patternExecutor->getCurrentPatternName() == "LEFT")
+        if (stateManager && isPatternActive)
         {
             stepperX.setMaxSpeed(targetSpeed);
         }
@@ -84,8 +84,7 @@ void MovementController::setPatternSpeed(const String& pattern,
     else if (pattern == "RIGHT")
     {
         rightSpeed = targetSpeed;
-        if (patternExecutor &&
-            patternExecutor->getCurrentPatternName() == "RIGHT")
+        if (stateManager && isPatternActive)
         {
             stepperX.setMaxSpeed(targetSpeed);
         }

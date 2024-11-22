@@ -62,13 +62,25 @@ void MaintenanceController::executePrimeSequence()
     static int primeStep = 0;
 
     if (primeStep == 0)
-    {  // Start sequence
-        Command sprayCmd('S', 0, true);
-        movementController.executeCommand(sprayCmd);
+    {                                   // Move to prime position (x=0, y=15)
+        Command moveX('M', 0, false);   // Move to X=0
+        Command moveY('N', 15, false);  // Move to Y=15
+        movementController.executeCommand(moveX);
+        movementController.executeCommand(moveY);
         stepTimer = millis();
         primeStep = 1;
     }
     else if (primeStep == 1)
+    {  // Wait for movement to complete
+        if (!movementController.isMoving() && (millis() - stepTimer >= 1000))
+        {
+            Command sprayCmd('S', 0, true);
+            movementController.executeCommand(sprayCmd);
+            stepTimer = millis();
+            primeStep = 2;
+        }
+    }
+    else if (primeStep == 2)
     {  // Prime for 5 seconds
         if (millis() - stepTimer >= 5000)
         {
@@ -86,23 +98,35 @@ void MaintenanceController::executeCleanSequence()
     static int cleanStep = 0;
 
     if (cleanStep == 0)
-    {  // Start cleaning
-        Command sprayCmd('S', 0, true);
-        movementController.executeCommand(sprayCmd);
+    {                                   // Move to clean position (x=0, y=20)
+        Command moveX('M', 0, false);   // Move to X=0
+        Command moveY('N', 20, false);  // Move to Y=20
+        movementController.executeCommand(moveX);
+        movementController.executeCommand(moveY);
         stepTimer = millis();
         cleanStep = 1;
     }
     else if (cleanStep == 1)
+    {  // Wait for movement to complete
+        if (!movementController.isMoving() && (millis() - stepTimer >= 1000))
+        {
+            Command sprayCmd('S', 0, true);
+            movementController.executeCommand(sprayCmd);
+            stepTimer = millis();
+            cleanStep = 2;
+        }
+    }
+    else if (cleanStep == 2)
     {  // Spray cleaner for 10 seconds
         if (millis() - stepTimer >= 10000)
         {
             Command stopCmd('S', 0, false);
             movementController.executeCommand(stopCmd);
             stepTimer = millis();
-            cleanStep = 2;
+            cleanStep = 3;
         }
     }
-    else if (cleanStep == 2)
+    else if (cleanStep == 3)
     {  // Wait 5 seconds
         if (millis() - stepTimer >= 5000)
         {

@@ -16,6 +16,9 @@ class PatternExecutor
     bool isExecuting() const;
     void stop();
 
+    String getCurrentPatternName() const;
+    int getCurrentSide() const { return currentSide; }
+
    private:
     MovementController& movementController;
     StateManager* stateManager;
@@ -28,7 +31,6 @@ class PatternExecutor
     Command* getCurrentPattern() const;
     int getCurrentPatternSize() const;
     void processNextCommand();
-    String getCurrentPatternName() const;
 };
 
 #endif

@@ -9,4 +9,4 @@ int X_ACCEL = 5000;        // Steps per second per second
 int Y_ACCEL = 5000;        // Steps per second per second
 int ROTATION_ACCEL = 200;  // Steps per second per second
 int HOMING_SPEED = 700;    // Steps per seconds
-int ROTATION_HOMING_SPEED = 700;
+int ROTATION_HOMING_SPEED = 100;
