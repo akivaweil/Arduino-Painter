@@ -30,6 +30,7 @@ class SerialCommandHandler
     void handleSpeedCommand(const String& command);
     void handleSystemCommand(const String& command);
     void sendResponse(bool success, const char* message);
+    void handleRotationCommand(const String& command);
 };
 
 #endif

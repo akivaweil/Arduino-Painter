@@ -8,6 +8,7 @@ HomingController::HomingController(MovementController& movement)
       stateManager(nullptr),
       xHomeSensor(),
       yHomeSensor(),
+      rotationHomeSensor(),
       homing(false),
       homeComplete(false),
       currentAxis(0)
@@ -27,8 +28,10 @@ void HomingController::setup()
 
     xHomeSensor.attach(X_HOME_SENSOR_PIN);
     yHomeSensor.attach(Y_HOME_SENSOR_PIN);
+    rotationHomeSensor.attach(ROTATION_HOME_SENSOR_PIN);
     xHomeSensor.interval(20);  // 20ms debounce time
     yHomeSensor.interval(20);
+    rotationHomeSensor.interval(20);
 }
 
 void HomingController::update()
@@ -36,26 +39,25 @@ void HomingController::update()
     // Update sensor readings
     xHomeSensor.update();
     yHomeSensor.update();
+    rotationHomeSensor.update();
 
     if (!homing)
     {
         return;
     }
 
-    // Process homing sequence
-    if (currentAxis == 0)
+    // Process homing sequence based on current axis
+    switch (currentAxis)
     {
-        processXHoming();
-    }
-    else
-    {
-        processYHoming();
-
-        // If we just completed homing, ensure state transition
-        if (homeComplete && stateManager)
-        {
-            stateManager->setState(HOMED);
-        }
+        case 0:
+            processXHoming();
+            break;
+        case 1:
+            processYHoming();
+            break;
+        case 2:
+            processRotationHoming();
+            break;
     }
 }
 
@@ -63,10 +65,9 @@ void HomingController::processXHoming()
 {
     if (!xHomeSensor.read())  // Sensor triggered
     {
-        movementController.stopMovement();   // Stop immediately
-        movementController.setXPosition(0);  // Set current position as 0
-        movementController.setXSpeed(
-            X_SPEED);  // Restore normal speed after homing complete
+        movementController.stopMovement();
+        movementController.setXPosition(0);
+        movementController.setXSpeed(X_SPEED);  // Restore normal speed
 
         Serial.println(F("X-axis home position found"));
         currentAxis = 1;  // Move to Y-axis homing
@@ -78,12 +79,8 @@ void HomingController::processXHoming()
     }
     else if (!movementController.isMoving())
     {
-        // Create a command for continuous movement towards homwe at slower
-        // speed
-        movementController.setXSpeed(
-            HOMING_SPEED);  // Use defined constant for homing
-        Command homeCmd('M', -999999,
-                        false);  // Use absolute move with large negative value
+        movementController.setXSpeed(HOMING_SPEED);
+        Command homeCmd('M', -999999, false);
         movementController.executeCommand(homeCmd);
     }
 }
@@ -92,21 +89,42 @@ void HomingController::processYHoming()
 {
     if (!yHomeSensor.read())  // Sensor triggered
     {
-        // First stop movement
         movementController.stopMovement();
         movementController.setYPosition(0);
-        movementController.setYSpeed(
-            Y_SPEED);  // Restore normal speed after homing complete
+        movementController.setYSpeed(Y_SPEED);
 
-        // Update status before state transition
         Serial.println(F("Y-axis home position found"));
+        currentAxis = 2;  // Move to rotation homing
+
+        if (stateManager)
+        {
+            stateManager->setState(HOMING_ROTATION);
+        }
+    }
+    else if (!movementController.isMoving())
+    {
+        movementController.setYSpeed(HOMING_SPEED);
+        Command homeCmd('N', -999999, false);
+        movementController.executeCommand(homeCmd);
+    }
+}
+
+void HomingController::processRotationHoming()
+{
+    if (!rotationHomeSensor.read())  // Sensor triggered
+    {
+        movementController.stopMovement();
+        movementController.setRotationPosition(0);
+        movementController.setRotationSpeed(
+            ROTATION_SPEED);  // Restore normal speed
+
+        Serial.println(F("Rotation home position found"));
         homing = false;
         homeComplete = true;
 
         // Force an immediate update to ensure the movement completes
         movementController.update();
 
-        // Now transition state and report completion
         if (stateManager)
         {
             Serial.println(F("Homing sequence complete"));
@@ -115,10 +133,9 @@ void HomingController::processYHoming()
     }
     else if (!movementController.isMoving())
     {
-        // Create a command for continuous movement towards home at slower speed
-        movementController.setYSpeed(
-            HOMING_SPEED);  // Use defined constant for homing
-        Command homeCmd('N', -999999, false);
+        // Move CCW slowly until home sensor is found
+        movementController.setRotationSpeed(ROTATION_HOMING_SPEED);
+        Command homeCmd('R', -360, false);  // Full rotation CCW
         movementController.executeCommand(homeCmd);
     }
 }

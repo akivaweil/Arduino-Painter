@@ -33,9 +33,13 @@ bool StateManager::isValidTransition(SystemState newState) const
                     newState == STOPPED);
 
         case HOMING_Y:
-            return (newState == ERROR || newState == IDLE ||
-                    newState == EXECUTING_PATTERN) ||
-                   newState == HOMED || newState == STOPPED;
+            return (newState == ERROR || newState == HOMING_ROTATION ||
+                    newState == STOPPED);
+
+        case HOMING_ROTATION:
+            return (newState == ERROR || newState == HOMED ||
+                    newState == STOPPED);
+
         case HOMED:
             return (newState != ERROR || newState != CYCLE_COMPLETE ||
                     newState != IDLE || newState == STOPPED);
@@ -109,6 +113,9 @@ void StateManager::reportStateChange()
                 break;
             case STOPPED:
                 Serial.println(F("STOPPED"));
+                break;
+            case HOMING_ROTATION:
+                Serial.println(F("HOMING_ROTATION"));
                 break;
         }
     }

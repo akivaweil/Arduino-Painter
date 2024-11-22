@@ -12,6 +12,7 @@ const int ROTATION_DIR_PIN = 3;
 const int PAINT_RELAY_PIN = 4;
 const int X_HOME_SENSOR_PIN = 12;
 const int Y_HOME_SENSOR_PIN = 8;
+const int ROTATION_HOME_SENSOR_PIN = 14;
 
 // Steps per unit - Using integers for exact step counts
 const int X_STEPS_PER_INCH = 127;    // X-axis calibration
@@ -28,6 +29,7 @@ extern int X_ACCEL;         // Steps per second per second
 extern int Y_ACCEL;         // Steps per second per second
 extern int ROTATION_ACCEL;  // Steps per second per second
 extern int HOMING_SPEED;    // Steps per seconds
+extern int ROTATION_HOMING_SPEED;
 
 // Default values for speeds and acceleration
 // These should be defined in ONE cpp file (e.g., CNCController.cpp)

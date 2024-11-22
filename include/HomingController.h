@@ -23,6 +23,7 @@ class HomingController
     StateManager* stateManager;
     Bounce xHomeSensor;
     Bounce yHomeSensor;
+    Bounce rotationHomeSensor;
 
     bool homing;
     bool homeComplete;
@@ -30,6 +31,7 @@ class HomingController
 
     void processXHoming();
     void processYHoming();
+    void processRotationHoming();
 };
 
 #endif

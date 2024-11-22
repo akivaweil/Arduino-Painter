@@ -7,6 +7,7 @@ enum SystemState
     IDLE,
     HOMING_X,
     HOMING_Y,
+    HOMING_ROTATION,
     HOMED,
     EXECUTING_PATTERN,
     ERROR,

@@ -37,6 +37,7 @@ void MovementController::configureMotors()
     // Rotation configuration
     stepperRotation.setMaxSpeed(ROTATION_SPEED);
     stepperRotation.setAcceleration(ROTATION_ACCEL);
+    stepperRotation.setPinsInverted(false);  // Adjust based on your setup
 }
 
 void MovementController::updatePositionCache() const
@@ -48,31 +49,37 @@ void MovementController::updatePositionCache() const
         const_cast<AccelStepper&>(stepperRotation).currentPosition();
 }
 
-void MovementController::update()
+void MovementController::setRotationPosition(long position)
 {
-    // Update all stepper positions
-    stepperX.run();
-    stepperY.run();
-    stepperRotation.run();
-
-    // Update position cache
+    stepperRotation.setCurrentPosition(position);
     updatePositionCache();
+}
 
-    // Update motors running status
-    bool previouslyRunning = motorsRunning;
-    motorsRunning = stepperX.isRunning() || stepperY.isRunning() ||
-                    stepperRotation.isRunning();
+void MovementController::setRotationSpeed(float speed)
+{
+    stepperRotation.setMaxSpeed(speed);
+}
 
-    // If motors just stopped running, turn off spray
-    if (previouslyRunning && !motorsRunning)
-    {
-        digitalWrite(PAINT_RELAY_PIN, HIGH);
-    }
+long MovementController::getCurrentRotationSteps() const
+{
+    return lastRotationPos;
+}
+
+float MovementController::getCurrentRotationAngle() const
+{
+    return stepsToAngle(lastRotationPos);
+}
+
+float MovementController::stepsToAngle(long steps) const
+{
+    return (static_cast<float>(steps) * 360.0) / STEPS_PER_ROTATION;
 }
 
 bool MovementController::executeCommand(const Command& cmd)
 {
     updateSprayControl(cmd);
+
+    long targetSteps = 0;
 
     switch (cmd.type)
     {
@@ -92,9 +99,13 @@ bool MovementController::executeCommand(const Command& cmd)
             stepperY.moveTo(cmd.value * Y_STEPS_PER_INCH);
             break;
 
-        case 'R':  // Rotation
-            stepperRotation.moveTo((cmd.value * STEPS_PER_ROTATION) / 360);
+        case 'R':  // Rotation movement (in degrees)
+        {
+            // Convert degrees to steps
+            targetSteps = (cmd.value * STEPS_PER_ROTATION) / 360;
+            stepperRotation.move(targetSteps);
             break;
+        }
 
         case 'S':  // Spray control only
             // Already handled by updateSprayControl
@@ -136,19 +147,9 @@ long MovementController::getCurrentXSteps() const { return lastXPos; }
 
 long MovementController::getCurrentYSteps() const { return lastYPos; }
 
-long MovementController::getCurrentRotationSteps() const
-{
-    return lastRotationPos;
-}
-
 float MovementController::stepsToInches(long steps, long stepsPerInch) const
 {
     return static_cast<float>(steps) / stepsPerInch;
-}
-
-float MovementController::stepsToAngle(long steps) const
-{
-    return (static_cast<float>(steps) * 360.0) / STEPS_PER_ROTATION;
 }
 
 void MovementController::stopMovement()
@@ -165,6 +166,28 @@ void MovementController::stopMovement()
 
     motorsRunning = false;
     digitalWrite(PAINT_RELAY_PIN, HIGH);  // Ensure spray is off
+}
+
+void MovementController::update()
+{
+    // Update all stepper positions
+    stepperX.run();
+    stepperY.run();
+    stepperRotation.run();
+
+    // Update position cache
+    updatePositionCache();
+
+    // Update motors running status
+    bool previouslyRunning = motorsRunning;
+    motorsRunning = stepperX.isRunning() || stepperY.isRunning() ||
+                    stepperRotation.isRunning();
+
+    // If motors just stopped running, turn off spray
+    if (previouslyRunning && !motorsRunning)
+    {
+        digitalWrite(PAINT_RELAY_PIN, HIGH);
+    }
 }
 
 void MovementController::setXPosition(long position)

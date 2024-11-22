@@ -34,6 +34,7 @@ void SerialCommandHandler::setup()
     Serial.println(F("  GOTO_X <pos> - Absolute X movement"));
     Serial.println(F("  GOTO_Y <pos> - Absolute Y movement"));
     Serial.println(F("  SPEED <side> <value> - Set speed for side (0-100)"));
+    Serial.println(F("  ROTATE <degrees> - Rotate specified degrees (+ or -)"));
 }
 
 void SerialCommandHandler::processCommands()
@@ -61,8 +62,54 @@ void SerialCommandHandler::processCommands()
         return;
     }
 
+    // Handle rotation command separately
+    if (command.startsWith("ROTATE "))
+    {
+        handleRotationCommand(command);
+        return;
+    }
+
     // Process other system commands
     handleSystemCommand(command);
+}
+
+// Add new method to SerialCommandHandler.cpp:
+void SerialCommandHandler::handleRotationCommand(const String& command)
+{
+    // Only allow manual rotation in IDLE state
+    if (stateManager.getCurrentState() != IDLE &&
+        stateManager.getCurrentState() != HOMED)
+    {
+        sendResponse(false,
+                     "Can only rotate manually from IDLE or HOMED state");
+        return;
+    }
+
+    // Parse rotation degrees from command
+    int spaceIndex = command.indexOf(' ');
+    if (spaceIndex == -1)
+    {
+        sendResponse(false, "Invalid rotation command format");
+        return;
+    }
+
+    float degrees = command.substring(spaceIndex + 1).toFloat();
+
+    // Echo received command
+    Serial.print(F("Manual rotation: "));
+    Serial.print(degrees);
+    Serial.println(F(" degrees"));
+
+    // Create and execute rotation command
+    Command rotateCmd('R', degrees, false);  // 'R' for rotation
+    if (movementController.executeCommand(rotateCmd))
+    {
+        sendResponse(true, "Manual rotation started");
+    }
+    else
+    {
+        sendResponse(false, "Failed to execute rotation");
+    }
 }
 
 void SerialCommandHandler::handleSpeedCommand(const String& command)

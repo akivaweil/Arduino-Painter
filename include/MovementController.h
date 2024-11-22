@@ -24,7 +24,6 @@ class MovementController
     // Position query methods
     long getCurrentXSteps() const;
     long getCurrentYSteps() const;
-    long getCurrentRotationSteps() const;
 
     // Unit conversion methods
     float stepsToInches(long steps, long stepsPerInch) const;
@@ -32,6 +31,11 @@ class MovementController
 
     void setXSpeed(float acceleration);
     void setYSpeed(float acceleration);
+
+    void setRotationPosition(long position);
+    void setRotationSpeed(float speed);
+    long getCurrentRotationSteps() const;
+    float getCurrentRotationAngle() const;
 
    private:
     AccelStepper stepperX;
