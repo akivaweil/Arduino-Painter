@@ -22,8 +22,7 @@ bool StateManager::isValidTransition(SystemState newState) const
     switch (currentState)
     {
         case IDLE:
-            return (newState != ERROR && newState != CYCLE_COMPLETE &&
-                    newState != HOMED) ||
+            return (newState != ERROR && newState != HOMED) ||
                    newState == MANUAL_ROTATING;
 
         case ERROR:
@@ -43,16 +42,11 @@ bool StateManager::isValidTransition(SystemState newState) const
                     newState == STOPPED);
 
         case HOMED:
-            return (newState != ERROR && newState != CYCLE_COMPLETE &&
-                    newState != IDLE) ||
+            return (newState != ERROR && newState != IDLE) ||
                    newState == MANUAL_ROTATING;
 
         case EXECUTING_PATTERN:
-            return (newState == ERROR || newState == CYCLE_COMPLETE ||
-                    newState == HOMING_X || newState == STOPPED);
-
-        case CYCLE_COMPLETE:
-            return (newState == IDLE || newState == HOMING_X ||
+            return (newState == ERROR || newState == IDLE ||
                     newState == STOPPED);
 
         case STOPPED:
@@ -96,9 +90,6 @@ void StateManager::reportStateChange()
                 break;
             case ERROR:
                 Serial.println(F("ERROR"));
-                break;
-            case CYCLE_COMPLETE:
-                Serial.println(F("CYCLE_COMPLETE"));
                 break;
             case PRIMING:
                 Serial.println(F("PRIMING"));

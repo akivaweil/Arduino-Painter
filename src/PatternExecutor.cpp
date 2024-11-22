@@ -63,7 +63,7 @@ void PatternExecutor::update()
                 currentCommand = -1;
                 executingSingleSide = false;
                 stateManager->setState(
-                    CYCLE_COMPLETE);  // Transition to IDLE after full pattern
+                    IDLE);  // Transition to IDLE after full pattern
                 // Reset speeds to default after pattern completion
                 movementController.resetToDefaultSpeed();
             }
