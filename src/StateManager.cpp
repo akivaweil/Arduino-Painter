@@ -22,7 +22,9 @@ bool StateManager::isValidTransition(SystemState newState) const
     switch (currentState)
     {
         case IDLE:
-            return (newState != ERROR && newState != CYCLE_COMPLETE);
+            return (newState != ERROR && newState != CYCLE_COMPLETE &&
+                    newState != HOMED) ||
+                   newState == MANUAL_ROTATING;
 
         case ERROR:
             return (newState == IDLE || newState == HOMING_X ||
@@ -41,8 +43,9 @@ bool StateManager::isValidTransition(SystemState newState) const
                     newState == STOPPED);
 
         case HOMED:
-            return (newState != ERROR || newState != CYCLE_COMPLETE ||
-                    newState != IDLE || newState == STOPPED);
+            return (newState != ERROR && newState != CYCLE_COMPLETE &&
+                    newState != IDLE) ||
+                   newState == MANUAL_ROTATING;
 
         case EXECUTING_PATTERN:
             return (newState == ERROR || newState == CYCLE_COMPLETE ||
@@ -54,6 +57,10 @@ bool StateManager::isValidTransition(SystemState newState) const
 
         case STOPPED:
             return (newState == HOMING_X);
+
+        case MANUAL_ROTATING:  // New case for manual rotation
+            return (newState == ERROR || newState == IDLE ||
+                    newState == HOMED || newState == STOPPED);
 
         case PRIMING:
         case CLEANING:
@@ -116,6 +123,9 @@ void StateManager::reportStateChange()
                 break;
             case HOMING_ROTATION:
                 Serial.println(F("HOMING_ROTATION"));
+                break;
+            case MANUAL_ROTATING:
+                Serial.println(F("MANUAL_ROTATING"));
                 break;
         }
     }

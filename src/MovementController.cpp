@@ -9,7 +9,8 @@ MovementController::MovementController()
       stepperY(AccelStepper::DRIVER, Y_STEP_PIN, Y_DIR_PIN),
       stepperRotation(AccelStepper::DRIVER, ROTATION_STEP_PIN,
                       ROTATION_DIR_PIN),
-      motorsRunning(false)
+      motorsRunning(false),
+      stateManager(nullptr)  // Initialize stateManager pointer
 {
 }
 
@@ -183,10 +184,26 @@ void MovementController::update()
     motorsRunning = stepperX.isRunning() || stepperY.isRunning() ||
                     stepperRotation.isRunning();
 
-    // If motors just stopped running, turn off spray
+    // If motors just stopped running
     if (previouslyRunning && !motorsRunning)
     {
+        // Turn off spray
         digitalWrite(PAINT_RELAY_PIN, HIGH);
+
+        // If we were in manual rotation mode, transition back to appropriate
+        // state
+        if (stateManager && stateManager->getCurrentState() == MANUAL_ROTATING)
+        {
+            // Return to previous state (IDLE or HOMED)
+            if (stateManager->getPreviousState() == HOMED)
+            {
+                stateManager->setState(HOMED);
+            }
+            else
+            {
+                stateManager->setState(IDLE);
+            }
+        }
     }
 }
 

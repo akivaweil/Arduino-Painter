@@ -4,6 +4,7 @@
 #include <AccelStepper.h>
 
 #include "Command.h"
+#include "StateManager.h"
 
 class MovementController
 {
@@ -36,11 +37,13 @@ class MovementController
     void setRotationSpeed(float speed);
     long getCurrentRotationSteps() const;
     float getCurrentRotationAngle() const;
+    void setStateManager(StateManager* manager) { stateManager = manager; }
 
    private:
     AccelStepper stepperX;
     AccelStepper stepperY;
     AccelStepper stepperRotation;
+    StateManager* stateManager;
 
     // Cache current positions to avoid const issues
     mutable long lastXPos;

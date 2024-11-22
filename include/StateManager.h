@@ -13,6 +13,7 @@ class StateManager
     void setState(SystemState newState);
     bool isValidTransition(SystemState newState) const;
     void reportStateChange();
+    SystemState getPreviousState() const { return previousState; }
 
    private:
     SystemState currentState;

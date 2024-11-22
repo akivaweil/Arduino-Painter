@@ -41,6 +41,13 @@ void SerialCommandHandler::processCommands()
 {
     if (!Serial.available())
     {
+        // Check if we need to transition out of MANUAL_ROTATING state
+        if (stateManager.getCurrentState() == MANUAL_ROTATING &&
+            !movementController.isMoving())
+        {
+            // Return to previous state (IDLE or HOMED)
+            stateManager.setState(stateManager.getPreviousState());
+        }
         return;
     }
 
@@ -76,9 +83,9 @@ void SerialCommandHandler::processCommands()
 // Add new method to SerialCommandHandler.cpp:
 void SerialCommandHandler::handleRotationCommand(const String& command)
 {
-    // Only allow manual rotation in IDLE state
-    if (stateManager.getCurrentState() != IDLE &&
-        stateManager.getCurrentState() != HOMED)
+    // Only allow manual rotation in IDLE or HOMED state
+    SystemState currentState = stateManager.getCurrentState();
+    if (currentState != IDLE && currentState != HOMED)
     {
         sendResponse(false,
                      "Can only rotate manually from IDLE or HOMED state");
@@ -104,6 +111,8 @@ void SerialCommandHandler::handleRotationCommand(const String& command)
     Command rotateCmd('R', degrees, false);  // 'R' for rotation
     if (movementController.executeCommand(rotateCmd))
     {
+        // Set state to MANUAL_ROTATING
+        stateManager.setState(MANUAL_ROTATING);
         sendResponse(true, "Manual rotation started");
     }
     else

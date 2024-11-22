@@ -1,4 +1,3 @@
-// SystemState.h
 #ifndef SYSTEM_STATE_H
 #define SYSTEM_STATE_H
 
@@ -18,6 +17,7 @@ enum SystemState
     PAINTING_SIDE,
     STOPPED,
     PAUSED,
+    MANUAL_ROTATING,  // New state for manual rotation
 };
 
 #endif
