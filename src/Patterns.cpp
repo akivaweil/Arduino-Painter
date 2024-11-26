@@ -3,8 +3,8 @@
 
 Command FRONT[] = {
     // Initial Movement
-    MOVETO_X(3.5, false),  // →3.5→ - Initial offset
-    MOVETO_Y(0, false),    //
+    MOVETO_X(3.5 + 0.5, false),  // →3.5→ - Initial offset
+    MOVETO_Y(0 + 2.25, false),    //
     ROTATE(0),             // Rotate tray
 
     // Row 1
@@ -58,8 +58,8 @@ Command FRONT[] = {
 
 Command BACK[] = {
 
-    MOVETO_X(3.5, false),    // X offset
-    MOVETO_Y(33.28, false),  // Y offset
+    MOVETO_X(3.5 + 0.5, false),    // X offset
+    MOVETO_Y(33.28 + 2.25, false),  // Y offset
     ROTATE(180),             // Rotate tray
 
     // Row 1
@@ -117,7 +117,7 @@ Command LEFT[] = {
     // Initial Movement
 
     MOVETO_X(0, false),    //
-    MOVETO_Y(3.5, false),  // ↑3.5↑ Initial offset
+    MOVETO_Y(3.5 + 2.25, false),  // ↑3.5↑ Initial offset
     ROTATE(-90),           // Rotate tray
 
     // Row 1
@@ -159,8 +159,8 @@ Command LEFT[] = {
 
 Command RIGHT[] = {
 
-    MOVE_X(0, false),        //
-    MOVETO_Y(26.49, false),  // ↑3.5↑ Initial offset
+    MOVETO_X(0 + 0.5, false),   
+    MOVETO_Y(26.49 + 2.25, false),  // ↑3.5↑ Initial offset
     ROTATE(-180),            // Rotate tray
 
     // Row 1

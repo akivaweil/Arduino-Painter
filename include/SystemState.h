@@ -18,6 +18,7 @@ enum SystemState
     STOPPED,
     PAUSED,
     MANUAL_ROTATING,  // New state for manual rotation
+    DEPRESSURIZE_POT,
 };
 
 #endif
