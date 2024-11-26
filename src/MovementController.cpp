@@ -33,16 +33,21 @@ void MovementController::configureMotors()
     stepperX.setMaxSpeed(X_SPEED);
     stepperX.setAcceleration(X_ACCEL);
     stepperX.setPinsInverted(true);
+    stepperX.setMinPulseWidth(100); // Set a 10 µs minimum pulse width
+
 
     // Y-axis configuration
     stepperY.setMaxSpeed(Y_SPEED);
     stepperY.setAcceleration(Y_ACCEL);
     stepperY.setPinsInverted(false);
+    stepperY.setMinPulseWidth(100); // Set a 10 µs minimum pulse width
+
 
     // Rotation configuration
     stepperRotation.setMaxSpeed(ROTATION_SPEED);
     stepperRotation.setAcceleration(ROTATION_ACCEL);
     stepperRotation.setPinsInverted(false);  // Adjust based on your setup
+    stepperRotation.setMinPulseWidth(100); // Set a 10 µs minimum pulse width
 }
 
 void MovementController::setPatternSpeed(const String& pattern,
@@ -178,7 +183,7 @@ bool MovementController::executeCommand(const Command& cmd)
         case 'R':  // Rotation movement (in degrees)
         {
             // Convert degrees to steps
-            targetSteps = (cmd.value * STEPS_PER_ROTATION) / 360;
+            targetSteps = (cmd.value * 400) / 360;
             stepperRotation.move(targetSteps);
             break;
         }

@@ -6,7 +6,7 @@
 #include "MaintenanceController.h"
 #include "MovementController.h"
 #include "PatternExecutor.h"
-#include "SerialCommandHandler.h".
+#include "SerialCommandHandler.h"
 #include "StateManager.h"
 
 class CNCController
