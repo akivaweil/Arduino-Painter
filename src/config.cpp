@@ -2,8 +2,8 @@
 #include "config.h"
 
 // Define the global variables for motor configuration
-int X_SPEED = 500;        // Steps per second
-int Y_SPEED = 750;        // Steps per second
+int X_SPEED = 500;         // Steps per second
+int Y_SPEED = 750;         // Steps per second
 int ROTATION_SPEED = 150;  // Steps per second
 int X_ACCEL = 2500;        // Steps per second per second
 int Y_ACCEL = 2500;        // Steps per second per second

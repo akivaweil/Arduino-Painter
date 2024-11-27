@@ -43,6 +43,8 @@ class MovementController
     void applyPatternSpeed(const String& pattern);
     void resetToDefaultSpeed();
 
+    float getCurrentXSpeed();
+
    private:
     AccelStepper stepperX;
     AccelStepper stepperY;

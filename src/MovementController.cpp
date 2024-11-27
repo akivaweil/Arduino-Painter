@@ -33,21 +33,19 @@ void MovementController::configureMotors()
     stepperX.setMaxSpeed(X_SPEED);
     stepperX.setAcceleration(X_ACCEL);
     stepperX.setPinsInverted(true);
-    stepperX.setMinPulseWidth(100); // Set a 10 µs minimum pulse width
-
+    stepperX.setMinPulseWidth(100);  // Set a 10 µs minimum pulse width
 
     // Y-axis configuration
     stepperY.setMaxSpeed(Y_SPEED);
     stepperY.setAcceleration(Y_ACCEL);
     stepperY.setPinsInverted(false);
-    stepperY.setMinPulseWidth(100); // Set a 10 µs minimum pulse width
-
+    stepperY.setMinPulseWidth(100);  // Set a 10 µs minimum pulse width
 
     // Rotation configuration
     stepperRotation.setMaxSpeed(ROTATION_SPEED);
     stepperRotation.setAcceleration(ROTATION_ACCEL);
     stepperRotation.setPinsInverted(false);  // Adjust based on your setup
-    stepperRotation.setMinPulseWidth(100); // Set a 10 µs minimum pulse width
+    stepperRotation.setMinPulseWidth(100);   // Set a 10 µs minimum pulse width
 }
 
 void MovementController::setPatternSpeed(const String& pattern,
@@ -302,3 +300,5 @@ void MovementController::setYPosition(long position)
 void MovementController::setXSpeed(float speed) { stepperX.setMaxSpeed(speed); }
 
 void MovementController::setYSpeed(float speed) { stepperY.setMaxSpeed(speed); }
+
+float MovementController::getCurrentXSpeed() { return stepperX.maxSpeed(); }

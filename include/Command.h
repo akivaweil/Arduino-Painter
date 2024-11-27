@@ -24,6 +24,13 @@ class Command
 
     // Regular constructor
     Command(char t, float v, bool s) : type(t), value(v), sprayOn(s) {}
+
+    // Equality operator
+    bool operator==(const Command& other) const
+    {
+        return type == other.type && value == other.value &&
+               sprayOn == other.sprayOn;
+    }
 };
 
 // Command Creation Macros

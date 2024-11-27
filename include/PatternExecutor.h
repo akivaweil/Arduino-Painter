@@ -1,4 +1,3 @@
-// PatternExecutor.h
 #ifndef PATTERN_EXECUTOR_H
 #define PATTERN_EXECUTOR_H
 
@@ -27,6 +26,12 @@ class PatternExecutor
     int targetSide;
     bool executingSingleSide;
     bool stopped;
+    int currentRow;
+
+    // New method for structured logging - default argument specified here
+    void reportStatus(const char* event, const String& details);
+
+    float calculateMovementDuration(const Command& cmd) const;
 
     Command* getCurrentPattern() const;
     int getCurrentPatternSize() const;

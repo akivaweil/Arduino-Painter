@@ -9,14 +9,14 @@ const int Y_STEP_PIN = 18;
 const int Y_DIR_PIN = 19;
 const int ROTATION_STEP_PIN = 2;
 const int ROTATION_DIR_PIN = 4;
-const int PAINT_RELAY_PIN = 34;
+const int PAINT_RELAY_PIN = 2;
 const int X_HOME_SENSOR_PIN = 33;
 const int Y_HOME_SENSOR_PIN = 32;
 const int ROTATION_HOME_SENSOR_PIN = 25;
 
 // Steps per unit - Using integers for exact step counts
-const int X_STEPS_PER_INCH = 32;    // X-axis calibration
-const int Y_STEPS_PER_INCH = 85;    // Y-axis calibration
+const int X_STEPS_PER_INCH = 32;     // X-axis calibration
+const int Y_STEPS_PER_INCH = 85;     // Y-axis calibration
 const int STEPS_PER_ROTATION = 400;  // Steps for full rotation
 
 // Motor speeds and acceleration
