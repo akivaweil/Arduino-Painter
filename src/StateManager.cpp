@@ -58,7 +58,6 @@ bool StateManager::isValidTransition(SystemState newState) const
 
         case PRIMING:
         case CLEANING:
-        case CALIBRATING:
         case PAINTING_SIDE:
             return (newState == ERROR || newState == IDLE ||
                     newState == HOMING_X || newState == STOPPED);
@@ -96,9 +95,6 @@ void StateManager::reportStateChange()
                 break;
             case CLEANING:
                 Serial.println(F("CLEANING"));
-                break;
-            case CALIBRATING:
-                Serial.println(F("CALIBRATING"));
                 break;
             case PAINTING_SIDE:
                 Serial.println(F("PAINTING_SIDE"));

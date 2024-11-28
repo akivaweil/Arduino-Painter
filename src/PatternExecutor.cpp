@@ -33,6 +33,11 @@ void PatternExecutor::reportStatus(const char* event, const String& details)
                       String(currentCmd.value < 0 ? "negative" : "positive");
             status += "|spray=" + String(currentCmd.sprayOn ? "on" : "off");
             status += "|duration_ms=" + String(duration, 2);
+            // Add movement direction indicator
+            status +=
+                "|movement_axis=" +
+                String(currentCmd.type == 'X' || currentCmd.type == 'M' ? "X"
+                                                                        : "Y");
         }
     }
 
@@ -58,6 +63,7 @@ void PatternExecutor::reportStatus(const char* event, const String& details)
     Serial.println(status);
 }
 
+// Rest of the file remains unchanged
 float PatternExecutor::calculateMovementDuration(const Command& cmd) const
 {
     // Get current speeds and steps per inch from MovementController
@@ -123,7 +129,7 @@ void PatternExecutor::update()
             reportStatus("PATTERN_COMPLETE", "single_side");
             executingSingleSide = false;
             targetSide = -1;
-            stateManager->setState(HOMED);
+            stateManager->setState(IDLE);
         }
         else
         {
@@ -244,14 +250,6 @@ void PatternExecutor::processNextCommand()
         if (currentCmd == SPRAY_OFF())
         {
             reportStatus("SPRAY_COMPLETE", "row_" + String(currentRow + 1));
-        }
-        else if (prevCmd == SPRAY_OFF() &&
-                 (currentCmd == MOVE_Y(4.16, false) ||
-                  currentCmd == MOVE_Y(-4.16, false) ||
-                  currentCmd == MOVE_Y(4.415, false) ||
-                  currentCmd == MOVE_Y(-4.415, false)))
-        {
-            reportStatus("VERTICAL_MOVE", "to_row_" + String(currentRow + 2));
         }
         else if (currentCmd == SPRAY_ON() && (prevCmd == MOVE_Y(4.16, false) ||
                                               prevCmd == MOVE_Y(-4.16, false) ||

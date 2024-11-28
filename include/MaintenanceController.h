@@ -9,10 +9,14 @@ class MaintenanceController
    public:
     MaintenanceController(MovementController& movement);
     void update();
+    void setup();
 
     void startPriming();
     void startCleaning();
-    void startCalibration();
+
+    // New pressure pot control methods
+    void togglePressurePot();
+    bool isPressurePotActive() const;
 
     bool isRunningMaintenance() const;
 
@@ -20,10 +24,10 @@ class MaintenanceController
     MovementController& movementController;
     int maintenanceStep;
     unsigned long stepTimer;
+    bool pressurePotActive;  // New member to track pressure pot state
 
     void executePrimeSequence();
     void executeCleanSequence();
-    void executeCalibrationSequence();
 };
 
 #endif

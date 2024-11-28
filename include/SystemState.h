@@ -1,3 +1,4 @@
+// Update SystemState.h
 #ifndef SYSTEM_STATE_H
 #define SYSTEM_STATE_H
 
@@ -13,12 +14,10 @@ enum SystemState
     CYCLE_COMPLETE,
     PRIMING,
     CLEANING,
-    CALIBRATING,
     PAINTING_SIDE,
     STOPPED,
     PAUSED,
-    MANUAL_ROTATING,  // New state for manual rotation
-    DEPRESSURIZE_POT,
+    MANUAL_ROTATING,
 };
 
 #endif

@@ -6,8 +6,18 @@
 #include "config.h"
 
 MaintenanceController::MaintenanceController(MovementController& movement)
-    : movementController(movement), maintenanceStep(0), stepTimer(0)
+    : movementController(movement),
+      maintenanceStep(0),
+      stepTimer(0),
+      pressurePotActive(false)
 {
+}
+
+void MaintenanceController::setup()
+{
+    // Initialize pressure pot relay pin
+    pinMode(PRESSURE_POT_RELAY, OUTPUT);
+    digitalWrite(PRESSURE_POT_RELAY, HIGH);  // Start deactivated
 }
 
 void MaintenanceController::update()
@@ -25,10 +35,21 @@ void MaintenanceController::update()
         case 2:  // Cleaning sequence
             executeCleanSequence();
             break;
-        case 3:  // Calibration sequence
-            executeCalibrationSequence();
-            break;
     }
+}
+
+void MaintenanceController::togglePressurePot()
+{
+    pressurePotActive = !pressurePotActive;
+    digitalWrite(PRESSURE_POT_RELAY, pressurePotActive ? LOW : HIGH);
+
+    Serial.print(F("Pressure pot "));
+    Serial.println(pressurePotActive ? F("activated") : F("deactivated"));
+}
+
+bool MaintenanceController::isPressurePotActive() const
+{
+    return pressurePotActive;
 }
 
 void MaintenanceController::startPriming()
@@ -43,13 +64,6 @@ void MaintenanceController::startCleaning()
     maintenanceStep = 2;
     stepTimer = millis();
     Serial.println(F("Starting cleaning sequence"));
-}
-
-void MaintenanceController::startCalibration()
-{
-    maintenanceStep = 3;
-    stepTimer = millis();
-    Serial.println(F("Starting calibration sequence"));
 }
 
 bool MaintenanceController::isRunningMaintenance() const
@@ -118,7 +132,7 @@ void MaintenanceController::executeCleanSequence()
     }
     else if (cleanStep == 2)
     {  // Spray cleaner for 10 seconds
-        if (millis() - stepTimer >= 10000)
+        if (millis() - stepTimer >= 3000)
         {
             Command stopCmd('S', 0, false);
             movementController.executeCommand(stopCmd);
@@ -133,42 +147,6 @@ void MaintenanceController::executeCleanSequence()
             cleanStep = 0;
             maintenanceStep = 0;  // Complete maintenance
             Serial.println(F("Clean sequence complete"));
-        }
-    }
-}
-
-void MaintenanceController::executeCalibrationSequence()
-{
-    static int calStep = 0;
-
-    if (calStep == 0)
-    {                                    // Move to calibration position
-        Command moveX('M', 2.0, false);  // Move to 2 inches X
-        Command moveY('N', 2.0, false);  // Move to 2 inches Y
-        movementController.executeCommand(moveX);
-        movementController.executeCommand(moveY);
-        stepTimer = millis();
-        calStep = 1;
-    }
-    else if (calStep == 1)
-    {  // Wait for movement to complete and start spray test
-        if (!movementController.isMoving() && (millis() - stepTimer >= 1000))
-        {
-            Command sprayCmd('S', 0, true);
-            movementController.executeCommand(sprayCmd);
-            stepTimer = millis();
-            calStep = 2;
-        }
-    }
-    else if (calStep == 2)
-    {  // Complete calibration
-        if (millis() - stepTimer >= 2000)
-        {
-            Command stopCmd('S', 0, false);
-            movementController.executeCommand(stopCmd);
-            calStep = 0;
-            maintenanceStep = 0;  // Complete maintenance
-            Serial.println(F("Calibration sequence complete"));
         }
     }
 }

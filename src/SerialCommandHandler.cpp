@@ -35,6 +35,7 @@ void SerialCommandHandler::setup()
     Serial.println(F("  GOTO_Y <pos> - Absolute Y movement"));
     Serial.println(F("  SPEED <side> <value> - Set speed for side (0-100)"));
     Serial.println(F("  ROTATE <degrees> - Rotate specified degrees (+ or -)"));
+    Serial.println(F("  PRESSURE   - Toggle pressure pot on/off"));
 }
 
 void SerialCommandHandler::processCommands()
@@ -290,18 +291,20 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
             responseMsg = "Can only clean from IDLE state";
         }
     }
-    else if (command == "CALIBRATE")
+    else if (command == "PRESSURE")
     {
         if (currentState == IDLE || currentState == HOMED)
         {
-            maintenanceController.startCalibration();
-            stateManager.setState(CALIBRATING);
-            responseMsg = "Starting calibration";
+            maintenanceController.togglePressurePot();
+            responseMsg = maintenanceController.isPressurePotActive()
+                              ? "Pressure pot activated"
+                              : "Pressure pot deactivated";
         }
         else
         {
             validCommand = false;
-            responseMsg = "Can only calibrate from IDLE state";
+            responseMsg =
+                "Can only toggle pressure pot from IDLE or HOMED state";
         }
     }
     else if (command == "STOP")

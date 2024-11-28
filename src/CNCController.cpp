@@ -27,6 +27,8 @@ void CNCController::setup()
     // Configure pins
     pinMode(PAINT_RELAY_PIN, OUTPUT);
     digitalWrite(PAINT_RELAY_PIN, HIGH);  // Ensure spray is off initially
+    pinMode(PRESSURE_POT_RELAY, OUTPUT);
+    digitalWrite(PRESSURE_POT_RELAY, HIGH);
 
     Serial.println(F("CNC Paint Sprayer Ready"));
     Serial.println(F("Commands: H-Home S-Start E-Stop R-Reset"));
