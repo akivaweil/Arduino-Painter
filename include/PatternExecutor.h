@@ -2,12 +2,14 @@
 #define PATTERN_EXECUTOR_H
 
 #include "Command.h"
+#include "HomingController.h"
 #include "MovementController.h"
 
 class PatternExecutor
 {
    public:
-    PatternExecutor(MovementController& movement);
+    // Modified constructor to accept HomingController
+    PatternExecutor(MovementController& movement, HomingController& homing);
     void update();
 
     void startPattern();
@@ -18,8 +20,12 @@ class PatternExecutor
     String getCurrentPatternName() const;
     int getCurrentSide() const { return currentSide; }
 
+    // Add method to set state manager if not already present
+    void setStateManager(StateManager* manager) { stateManager = manager; }
+
    private:
     MovementController& movementController;
+    HomingController& homingController;  // Changed to reference
     StateManager* stateManager;
     int currentSide;
     int currentCommand;
@@ -28,9 +34,7 @@ class PatternExecutor
     bool stopped;
     int currentRow;
 
-    // New method for structured logging - default argument specified here
     void reportStatus(const char* event, const String& details);
-
     float calculateMovementDuration(const Command& cmd) const;
 
     Command* getCurrentPattern() const;

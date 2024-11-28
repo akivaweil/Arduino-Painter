@@ -6,7 +6,7 @@
 CNCController::CNCController()
     : movementController(),
       homingController(movementController),
-      patternExecutor(movementController),
+      patternExecutor(movementController, homingController),
       maintenanceController(movementController),
       serialHandler(stateManager, movementController, homingController,
                     patternExecutor, maintenanceController)

@@ -93,8 +93,11 @@ float PatternExecutor::calculateMovementDuration(const Command& cmd) const
     return (steps / speed) * 1000.0;
 }
 
-PatternExecutor::PatternExecutor(MovementController& movement)
+PatternExecutor::PatternExecutor(MovementController& movement,
+                                 HomingController& homing)
     : movementController(movement),
+      homingController(homing),
+      stateManager(nullptr),
       currentSide(-1),
       currentCommand(-1),
       targetSide(-1),
@@ -140,8 +143,16 @@ void PatternExecutor::update()
                 currentSide = -1;
                 currentCommand = -1;
                 executingSingleSide = false;
-                stateManager->setState(IDLE);
                 movementController.resetToDefaultSpeed();
+
+                // Start homing sequence directly - no need to check if
+                // homingController exists
+                homingController.startHoming();
+                if (stateManager)
+                {
+                    stateManager->setState(HOMING_X);
+                }
+                reportStatus("AUTO_HOMING", "starting_after_pattern");
             }
             else
             {
