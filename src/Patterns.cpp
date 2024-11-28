@@ -3,7 +3,7 @@
 
 Command FRONT[] = {
     // Initial Movement
-    MOVETO_X(3.5 + 0.5, false),  // →3.5→ - Initial offset
+    MOVETO_X(3.5 + 0.75, false),  // →3.5→ - Initial offset
     MOVETO_Y(0 + 2.25, false),    //
     ROTATE(0),             // Rotate tray
 
@@ -58,7 +58,7 @@ Command FRONT[] = {
 
 Command BACK[] = {
 
-    MOVETO_X(3.5 + 0.5, false),    // X offset
+    MOVETO_X(3.5 + 0.75, false),    // X offset
     MOVETO_Y(33.28 + 2.25, false),  // Y offset
     ROTATE(180),             // Rotate tray
 
@@ -116,7 +116,7 @@ Command BACK[] = {
 Command LEFT[] = {
     // Initial Movement
 
-    MOVETO_X(0, false),    //
+    MOVETO_X(0 + 0.75, false),    //
     MOVETO_Y(3.5 + 2.25, false),  // ↑3.5↑ Initial offset
     ROTATE(-90),           // Rotate tray
 
@@ -159,7 +159,7 @@ Command LEFT[] = {
 
 Command RIGHT[] = {
 
-    MOVETO_X(0 + 0.5, false),   
+    MOVETO_X(0 + 0.75, false),   
     MOVETO_Y(26.49 + 2.25, false),  // ↑3.5↑ Initial offset
     ROTATE(-180),            // Rotate tray
 
@@ -197,6 +197,8 @@ Command RIGHT[] = {
     SPRAY_ON(),            // ● - Start spray
     MOVE_X(-33.28, true),  // ←33.28← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
+
+    ROTATE(90),            // Rotate tray back to starting position
 };
 
 const int FRONT_SIZE = sizeof(FRONT) / sizeof(Command);
