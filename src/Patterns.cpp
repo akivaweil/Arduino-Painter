@@ -59,7 +59,7 @@ Command FRONT[] = {
 Command BACK[] = {
 
     MOVETO_X(3.5 + 0.75, false),    // X offset
-    MOVETO_Y(33.28 + 2.25, false),  // Y offset
+    MOVETO_Y(29.12 + 2.25, false),  // Y offset
     ROTATE(180),             // Rotate tray
 
     // Row 1
@@ -160,7 +160,7 @@ Command LEFT[] = {
 Command RIGHT[] = {
 
     MOVETO_X(0 + 0.75, false),   
-    MOVETO_Y(26.49 + 2.25, false),  // ↑3.5↑ Initial offset
+    MOVETO_Y(22.075 + 2.25, false),  // ↑3.5↑ Initial offset
     ROTATE(-180),            // Rotate tray
 
     // Row 1
