@@ -17,7 +17,18 @@ void MaintenanceController::setup()
 {
     // Initialize pressure pot relay pin
     pinMode(PRESSURE_POT_RELAY, OUTPUT);
-    digitalWrite(PRESSURE_POT_RELAY, HIGH);  // Start deactivated
+
+    // Check if the relay is already active (LOW)
+    int relayState = digitalRead(PRESSURE_POT_RELAY);
+    pressurePotActive = (relayState == LOW);
+
+    if (pressurePotActive)
+    {
+        // If pot is already active, set the activation time to ensure
+        // the 5-second requirement is met
+        pressurePotActivationTime = millis() - 6000;  // 6 seconds ago
+        Serial.println(F("Pressure pot was already active"));
+    }
 }
 
 void MaintenanceController::update()
@@ -41,6 +52,10 @@ void MaintenanceController::update()
 void MaintenanceController::togglePressurePot()
 {
     pressurePotActive = !pressurePotActive;
+    if (pressurePotActive)
+    {
+        pressurePotActivationTime = millis();
+    }
     digitalWrite(PRESSURE_POT_RELAY, pressurePotActive ? LOW : HIGH);
 
     Serial.print(F("Pressure pot "));
@@ -50,6 +65,15 @@ void MaintenanceController::togglePressurePot()
 bool MaintenanceController::isPressurePotActive() const
 {
     return pressurePotActive;
+}
+
+unsigned long MaintenanceController::getPressurePotActiveTime() const
+{
+    if (!pressurePotActive)
+    {
+        return 0;
+    }
+    return millis() - pressurePotActivationTime;
 }
 
 void MaintenanceController::startPriming()

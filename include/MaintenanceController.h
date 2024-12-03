@@ -20,11 +20,15 @@ class MaintenanceController
 
     bool isRunningMaintenance() const;
 
+    unsigned long getPressurePotActiveTime() const;
+
    private:
     MovementController& movementController;
     int maintenanceStep;
     unsigned long stepTimer;
     bool pressurePotActive;  // New member to track pressure pot state
+
+    unsigned long pressurePotActivationTime;  // Add this line
 
     void executePrimeSequence();
     void executeCleanSequence();

@@ -33,6 +33,7 @@ class PatternExecutor
     bool executingSingleSide;
     bool stopped;
     int currentRow;
+    int currentRotation;
 
     void reportStatus(const char* event, const String& details);
     float calculateMovementDuration(const Command& cmd) const;

@@ -31,6 +31,7 @@ class SerialCommandHandler
     void handleSystemCommand(const String& command);
     void sendResponse(bool success, const char* message);
     void handleRotationCommand(const String& command);
+    const char* getStateString(SystemState state);
 };
 
 #endif

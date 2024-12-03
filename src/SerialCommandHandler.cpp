@@ -88,8 +88,12 @@ void SerialCommandHandler::handleRotationCommand(const String& command)
     SystemState currentState = stateManager.getCurrentState();
     if (currentState != IDLE && currentState != HOMED)
     {
-        sendResponse(false,
-                     "Can only rotate manually from IDLE or HOMED state");
+        char buffer[64];
+        snprintf(
+            buffer, sizeof(buffer),
+            "Can only rotate manually from IDLE or HOMED state (current: %s)",
+            getStateString(currentState));
+        sendResponse(false, buffer);
         return;
     }
 
@@ -153,9 +157,14 @@ void SerialCommandHandler::handleSpeedCommand(const String& command)
 void SerialCommandHandler::handleManualMovement(const String& command)
 {
     // Only allow manual movement in IDLE state
-    if (stateManager.getCurrentState() != IDLE)
+    SystemState currentState = stateManager.getCurrentState();
+    if (currentState != IDLE)
     {
-        sendResponse(false, "Can only move manually from IDLE state");
+        char buffer[64];
+        snprintf(buffer, sizeof(buffer),
+                 "Can only move manually from IDLE state (current: %s)",
+                 getStateString(currentState));
+        sendResponse(false, buffer);
         return;
     }
 
@@ -209,10 +218,59 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
 {
     SystemState currentState = stateManager.getCurrentState();
     bool validCommand = true;
-    char responseBuffer[32];  // Buffer for formatting response messages
-    const char* responseMsg = responseBuffer;
+    const char* responseMsg = "";
+    static char responseBuffer[128];  // Increased buffer size
 
-    if (command == "HOME")
+    if (command == "START" || command == "FRONT" || command == "BACK" ||
+        command == "LEFT" || command == "RIGHT")
+    {
+        if (currentState == HOMED)
+        {
+            // Check if pressure pot is active
+            if (!maintenanceController.isPressurePotActive())
+            {
+                sendResponse(false,
+                             "Pressure pot must be activated before painting");
+                return;
+            }
+
+            // Get pressure pot activation time
+            if (maintenanceController.getPressurePotActiveTime() < 5000)
+            {
+                sendResponse(
+                    false,
+                    "Pressure pot must be active for at least 5 seconds");
+                return;
+            }
+
+            // Process the command
+            if (command == "START")
+            {
+                patternExecutor.startPattern();
+                stateManager.setState(EXECUTING_PATTERN);
+                responseMsg = "Starting full pattern";
+            }
+            else
+            {
+                int side = (command == "FRONT")  ? 0
+                           : (command == "BACK") ? 1
+                           : (command == "LEFT") ? 2
+                                                 : 3;
+                patternExecutor.startSingleSide(side);
+                stateManager.setState(PAINTING_SIDE);
+                responseMsg = "Starting single side pattern";
+            }
+        }
+        else
+        {
+            validCommand = false;
+            snprintf(responseBuffer, sizeof(responseBuffer),
+                     "Can only start painting from HOMED state (current: %s)",
+                     getStateString(currentState));
+            responseMsg = responseBuffer;
+        }
+    }
+    else if (command == "HOME")
     {
         // For HOME command, first handle like a STOP command if system is
         // executing
@@ -230,39 +288,6 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
         stateManager.setState(HOMING_X);
         responseMsg = "Starting homing sequence";
     }
-    else if (command == "START")
-    {
-        if (currentState == HOMED)
-        {
-            patternExecutor.startPattern();
-            stateManager.setState(EXECUTING_PATTERN);
-            responseMsg = "Starting full pattern";
-        }
-        else
-        {
-            validCommand = false;
-            responseMsg = "Can only start pattern from HOMED state";
-        }
-    }
-    else if (command == "FRONT" || command == "BACK" || command == "LEFT" ||
-             command == "RIGHT")
-    {
-        if (currentState == HOMED)
-        {
-            int side = (command == "FRONT")  ? 0
-                       : (command == "BACK") ? 1
-                       : (command == "LEFT") ? 2
-                                             : 3;
-            patternExecutor.startSingleSide(side);
-            stateManager.setState(PAINTING_SIDE);
-            responseMsg = "Starting single side pattern";
-        }
-        else
-        {
-            validCommand = false;
-            responseMsg = "Can only start painting from HOMED state";
-        }
-    }
     else if (command == "PRIME")
     {
         if (currentState == IDLE || currentState == HOMED)
@@ -274,7 +299,10 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
         else
         {
             validCommand = false;
-            responseMsg = "Can only prime from IDLE state";
+            snprintf(responseBuffer, sizeof(responseBuffer),
+                     "Can only prime from IDLE or HOMED state (current: %s)",
+                     getStateString(currentState));
+            responseMsg = responseBuffer;
         }
     }
     else if (command == "CLEAN")
@@ -288,7 +316,10 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
         else
         {
             validCommand = false;
-            responseMsg = "Can only clean from IDLE state";
+            snprintf(responseBuffer, sizeof(responseBuffer),
+                     "Can only clean from IDLE or HOMED state (current: %s)",
+                     getStateString(currentState));
+            responseMsg = responseBuffer;
         }
     }
     else if (command == "PRESSURE")
@@ -303,8 +334,11 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
         else
         {
             validCommand = false;
-            responseMsg =
-                "Can only toggle pressure pot from IDLE or HOMED state";
+            snprintf(responseBuffer, sizeof(responseBuffer),
+                     "Can only toggle pressure pot from IDLE or HOMED state "
+                     "(current: %s)",
+                     getStateString(currentState));
+            responseMsg = responseBuffer;
         }
     }
     else if (command == "STOP")
@@ -328,4 +362,42 @@ void SerialCommandHandler::sendResponse(bool success, const char* message)
 {
     Serial.print(success ? F("OK: ") : F("WARNING: "));
     Serial.println(message);
+}
+
+// Add new helper method to convert state to string
+const char* SerialCommandHandler::getStateString(SystemState state)
+{
+    switch (state)
+    {
+        case IDLE:
+            return "IDLE";
+        case HOMING_X:
+            return "HOMING_X";
+        case HOMING_Y:
+            return "HOMING_Y";
+        case HOMING_ROTATION:
+            return "HOMING_ROTATION";
+        case HOMED:
+            return "HOMED";
+        case EXECUTING_PATTERN:
+            return "EXECUTING_PATTERN";
+        case ERROR:
+            return "ERROR";
+        case CYCLE_COMPLETE:
+            return "CYCLE_COMPLETE";
+        case PRIMING:
+            return "PRIMING";
+        case CLEANING:
+            return "CLEANING";
+        case PAINTING_SIDE:
+            return "PAINTING_SIDE";
+        case STOPPED:
+            return "STOPPED";
+        case PAUSED:
+            return "PAUSED";
+        case MANUAL_ROTATING:
+            return "MANUAL_ROTATING";
+        default:
+            return "UNKNOWN";
+    }
 }

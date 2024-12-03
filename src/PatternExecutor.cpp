@@ -145,17 +145,42 @@ void PatternExecutor::update()
                 executingSingleSide = false;
                 movementController.resetToDefaultSpeed();
 
-                // Start homing sequence directly - no need to check if
-                // homingController exists
-                homingController.startHoming();
-                if (stateManager)
+                // Return rotation to home position
+                long homePos = homingController.getHomeRotationPosition();
+                Command rotateHome('R', 0, false);  // Rotate to 0 degrees
+                movementController.executeCommand(rotateHome);
+
+                // Wait for rotation to complete before homing X and Y
+                if (!movementController.isMoving())
                 {
-                    stateManager->setState(HOMING_X);
+                    homingController.startHoming();
+                    reportStatus("AUTO_HOMING", "starting_after_pattern");
                 }
-                reportStatus("AUTO_HOMING", "starting_after_pattern");
             }
             else
             {
+                // Calculate rotation needed for next side
+                int rotationNeeded = 0;
+                switch (currentSide)
+                {
+                    case 1:  // Going to BACK
+                        rotationNeeded = 180;
+                        break;
+                    case 2:  // Going to LEFT
+                        rotationNeeded = 90;
+                        break;
+                    case 3:  // Going to RIGHT
+                        rotationNeeded = 180;
+                        break;
+                }
+
+                if (rotationNeeded != 0)
+                {
+                    Command rotateCmd('R', rotationNeeded, false);
+                    movementController.executeCommand(rotateCmd);
+                    currentRotation = (currentRotation + rotationNeeded) % 360;
+                }
+
                 reportStatus("SIDE_CHANGE",
                              "moving_to_side_" + String(currentSide));
             }
@@ -169,6 +194,7 @@ void PatternExecutor::startPattern()
     currentSide = 0;
     currentCommand = 0;
     currentRow = 0;
+    currentRotation = 0;  // Reset rotation tracking
     executingSingleSide = false;
     targetSide = -1;
     reportStatus("PATTERN_START", "full_pattern");
@@ -184,6 +210,40 @@ void PatternExecutor::startSingleSide(int side)
         currentRow = 0;
         executingSingleSide = true;
         targetSide = side;
+
+        // Calculate required rotation for the requested side
+        int targetRotation;
+        switch (side)
+        {
+            case 0:  // FRONT
+                targetRotation = 0;
+                break;
+            case 1:  // BACK
+                targetRotation = 180;
+                break;
+            case 2:  // LEFT
+                targetRotation = 270;
+                break;
+            case 3:  // RIGHT
+                targetRotation = 90;
+                break;
+        }
+
+        // Add rotation command to get to correct position
+        int rotationNeeded = targetRotation - currentRotation;
+        if (rotationNeeded != 0)
+        {
+            // Normalize to shortest path (-180 to +180)
+            if (rotationNeeded > 180)
+                rotationNeeded -= 360;
+            if (rotationNeeded < -180)
+                rotationNeeded += 360;
+
+            Command rotateCmd('R', rotationNeeded, false);
+            movementController.executeCommand(rotateCmd);
+        }
+
+        currentRotation = targetRotation;  // Update current rotation
         reportStatus("PATTERN_START", "single_side");
     }
     else

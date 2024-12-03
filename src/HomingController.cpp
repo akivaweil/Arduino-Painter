@@ -11,7 +11,8 @@ HomingController::HomingController(MovementController& movement)
       rotationHomeSensor(),
       homing(false),
       homeComplete(false),
-      currentAxis(0)
+      currentAxis(0),
+      homeRotationPosition(0)
 {
 }
 
@@ -115,8 +116,9 @@ void HomingController::processRotationHoming()
     {
         movementController.stopMovement();
         movementController.setRotationPosition(0);
-        movementController.setRotationSpeed(
-            ROTATION_SPEED);  // Restore normal speed
+        movementController.setRotationSpeed(ROTATION_SPEED);
+
+        homeRotationPosition = 0;
 
         Serial.println(F("Rotation home position found"));
         homing = false;
@@ -151,7 +153,12 @@ void HomingController::startHoming()
 
         if (stateManager)
         {
+            Serial.println(F("Setting state to HOMING_X"));
             stateManager->setState(HOMING_X);
+        }
+        else
+        {
+            Serial.println(F("No state manager set"));
         }
     }
 }
@@ -159,3 +166,8 @@ void HomingController::startHoming()
 bool HomingController::isHoming() const { return homing; }
 
 bool HomingController::isHomed() const { return homeComplete; }
+
+long HomingController::getHomeRotationPosition() const
+{
+    return homeRotationPosition;
+}

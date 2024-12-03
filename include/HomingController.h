@@ -17,6 +17,7 @@ class HomingController
     bool isHomed() const;
     void startHoming();
     void setStateManager(StateManager* manager);
+    long getHomeRotationPosition() const;
 
    private:
     MovementController& movementController;
@@ -28,6 +29,7 @@ class HomingController
     bool homing;
     bool homeComplete;
     int currentAxis;  // 0 = X, 1 = Y
+    long homeRotationPosition;
 
     void processXHoming();
     void processYHoming();

@@ -47,7 +47,7 @@ bool StateManager::isValidTransition(SystemState newState) const
 
         case EXECUTING_PATTERN:
             return (newState == ERROR || newState == IDLE ||
-                    newState == STOPPED);
+                    newState == STOPPED || newState == HOMING_X);
 
         case STOPPED:
             return (newState == HOMING_X);
