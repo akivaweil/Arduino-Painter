@@ -56,7 +56,7 @@ void MaintenanceController::togglePressurePot()
     {
         pressurePotActivationTime = millis();
     }
-    digitalWrite(PRESSURE_POT_RELAY, pressurePotActive ? LOW : HIGH);
+    digitalWrite(PRESSURE_POT_RELAY, pressurePotActive ? HIGH : LOW);
 
     Serial.print(F("Pressure pot "));
     Serial.println(pressurePotActive ? F("activated") : F("deactivated"));

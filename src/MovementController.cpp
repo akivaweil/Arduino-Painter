@@ -33,19 +33,19 @@ void MovementController::configureMotors()
     stepperX.setMaxSpeed(X_SPEED);
     stepperX.setAcceleration(X_ACCEL);
     stepperX.setPinsInverted(true);
-    stepperX.setMinPulseWidth(100);  // Set a 10 µs minimum pulse width
+    stepperX.setMinPulseWidth(100);
 
     // Y-axis configuration
     stepperY.setMaxSpeed(Y_SPEED);
     stepperY.setAcceleration(Y_ACCEL);
     stepperY.setPinsInverted(false);
-    stepperY.setMinPulseWidth(100);  // Set a 10 µs minimum pulse width
+    stepperY.setMinPulseWidth(100);
 
-    // Rotation configuration
+    // Rotation configuration - keep current position as is
     stepperRotation.setMaxSpeed(ROTATION_SPEED);
     stepperRotation.setAcceleration(ROTATION_ACCEL);
-    stepperRotation.setPinsInverted(false);  // Adjust based on your setup
-    stepperRotation.setMinPulseWidth(100);   // Set a 10 µs minimum pulse width
+    stepperRotation.setPinsInverted(false);
+    stepperRotation.setMinPulseWidth(100);
 }
 
 void MovementController::setPatternSpeed(const String& pattern,
@@ -276,12 +276,12 @@ void MovementController::updateSprayControl(const Command& cmd)
 {
     if (cmd.type == 'S')
     {
-        digitalWrite(PAINT_RELAY_PIN, cmd.sprayOn ? LOW : HIGH);
+        digitalWrite(PAINT_RELAY_PIN, cmd.sprayOn ? HIGH : LOW);
     }
     else if (cmd.sprayOn && (cmd.type == 'X' || cmd.type == 'Y' ||
                              cmd.type == 'M' || cmd.type == 'N'))
     {
-        digitalWrite(PAINT_RELAY_PIN, LOW);
+        digitalWrite(PAINT_RELAY_PIN, HIGH);
     }
 }
 
@@ -292,7 +292,7 @@ void MovementController::stop()
     stepperX.stop();
     stepperY.stop();
     stepperRotation.stop();
-    digitalWrite(PAINT_RELAY_PIN, HIGH);  // Ensure spray is off
+    digitalWrite(PAINT_RELAY_PIN, LOW);
     motorsRunning = false;
 }
 
@@ -318,7 +318,7 @@ void MovementController::stopMovement()
     stepperRotation.run();
 
     motorsRunning = false;
-    digitalWrite(PAINT_RELAY_PIN, HIGH);  // Ensure spray is off
+    digitalWrite(PAINT_RELAY_PIN, LOW);
 }
 
 void MovementController::update()
@@ -340,7 +340,7 @@ void MovementController::update()
     if (previouslyRunning && !motorsRunning)
     {
         // Turn off spray
-        digitalWrite(PAINT_RELAY_PIN, HIGH);
+        digitalWrite(PAINT_RELAY_PIN, LOW);
 
         // If we were in manual rotation mode, transition back to appropriate
         // state

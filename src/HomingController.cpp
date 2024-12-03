@@ -8,11 +8,11 @@ HomingController::HomingController(MovementController& movement)
       stateManager(nullptr),
       xHomeSensor(),
       yHomeSensor(),
-      rotationHomeSensor(),
       homing(false),
       homeComplete(false),
       currentAxis(0),
-      homeRotationPosition(0)
+      initialRotationPosition(0),
+      initialPositionSet(false)
 {
 }
 
@@ -29,10 +29,14 @@ void HomingController::setup()
 
     xHomeSensor.attach(X_HOME_SENSOR_PIN);
     yHomeSensor.attach(Y_HOME_SENSOR_PIN);
-    rotationHomeSensor.attach(ROTATION_HOME_SENSOR_PIN);
     xHomeSensor.interval(20);  // 20ms debounce time
     yHomeSensor.interval(20);
-    rotationHomeSensor.interval(20);
+
+    // Capture initial rotation position
+    initialRotationPosition = movementController.getCurrentRotationSteps();
+    initialPositionSet = true;
+    Serial.print(F("Initial rotation position set to: "));
+    Serial.println(initialRotationPosition);
 }
 
 void HomingController::update()
@@ -40,7 +44,6 @@ void HomingController::update()
     // Update sensor readings
     xHomeSensor.update();
     yHomeSensor.update();
-    rotationHomeSensor.update();
 
     if (!homing)
     {
@@ -112,33 +115,31 @@ void HomingController::processYHoming()
 
 void HomingController::processRotationHoming()
 {
-    if (!rotationHomeSensor.read())  // Sensor triggered
+    if (!movementController.isMoving())
     {
-        movementController.stopMovement();
-        movementController.setRotationPosition(0);
-        movementController.setRotationSpeed(ROTATION_SPEED);
+        if (!initialPositionSet)
+        {
+            // If somehow we got here without initial position, set it now
+            initialRotationPosition =
+                movementController.getCurrentRotationSteps();
+            initialPositionSet = true;
+            Serial.print(F("Late initial rotation position set to: "));
+            Serial.println(initialRotationPosition);
+        }
 
-        homeRotationPosition = 0;
+        // Create command to return to initial position
+        Command rotateCmd('R', 0, false);  // Absolute rotation to 0 degrees
+        movementController.executeCommand(rotateCmd);
 
-        Serial.println(F("Rotation home position found"));
+        Serial.println(F("Returning to initial rotation position"));
         homing = false;
         homeComplete = true;
-
-        // Force an immediate update to ensure the movement completes
-        movementController.update();
 
         if (stateManager)
         {
             Serial.println(F("Homing sequence complete"));
             stateManager->setState(HOMED);
         }
-    }
-    else if (!movementController.isMoving())
-    {
-        // Move CCW slowly until home sensor is found
-        movementController.setRotationSpeed(ROTATION_HOMING_SPEED);
-        Command homeCmd('R', -360, false);  // Full rotation CCW
-        movementController.executeCommand(homeCmd);
     }
 }
 
@@ -169,5 +170,5 @@ bool HomingController::isHomed() const { return homeComplete; }
 
 long HomingController::getHomeRotationPosition() const
 {
-    return homeRotationPosition;
+    return initialRotationPosition;
 }

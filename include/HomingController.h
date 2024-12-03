@@ -24,12 +24,12 @@ class HomingController
     StateManager* stateManager;
     Bounce xHomeSensor;
     Bounce yHomeSensor;
-    Bounce rotationHomeSensor;
 
     bool homing;
     bool homeComplete;
-    int currentAxis;  // 0 = X, 1 = Y
-    long homeRotationPosition;
+    int currentAxis;               // 0 = X, 1 = Y, 2 = Rotation
+    long initialRotationPosition;  // Store initial position
+    bool initialPositionSet;       // Track if initial position is set
 
     void processXHoming();
     void processYHoming();

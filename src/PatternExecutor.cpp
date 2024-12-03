@@ -222,10 +222,10 @@ void PatternExecutor::startSingleSide(int side)
                 targetRotation = 180;
                 break;
             case 2:  // LEFT
-                targetRotation = 270;
+                targetRotation = 90;
                 break;
             case 3:  // RIGHT
-                targetRotation = 90;
+                targetRotation = 270;
                 break;
         }
 
