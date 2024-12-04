@@ -9,7 +9,8 @@ MaintenanceController::MaintenanceController(MovementController& movement)
     : movementController(movement),
       maintenanceStep(0),
       stepTimer(0),
-      pressurePotActive(false)
+      pressurePotActive(false),
+      stateManager(nullptr)
 {
 }
 
@@ -127,6 +128,12 @@ void MaintenanceController::executePrimeSequence()
             primeStep = 0;
             maintenanceStep = 0;  // Complete maintenance
             Serial.println(F("Prime sequence complete"));
+
+            // Start homing sequence
+            if (stateManager)
+            {
+                stateManager->setState(HOMING_X);
+            }
         }
     }
 }
@@ -171,6 +178,17 @@ void MaintenanceController::executeCleanSequence()
             cleanStep = 0;
             maintenanceStep = 0;  // Complete maintenance
             Serial.println(F("Clean sequence complete"));
+
+            // Start homing sequence
+            if (stateManager)
+            {
+                stateManager->setState(HOMING_X);
+            }
         }
     }
+}
+
+void MaintenanceController::setStateManager(StateManager* manager)
+{
+    stateManager = manager;
 }

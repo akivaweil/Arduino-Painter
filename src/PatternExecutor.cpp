@@ -132,7 +132,12 @@ void PatternExecutor::update()
             reportStatus("PATTERN_COMPLETE", "single_side");
             executingSingleSide = false;
             targetSide = -1;
-            stateManager->setState(IDLE);
+
+            // Start homing sequence instead of going to IDLE
+            if (stateManager)
+            {
+                stateManager->setState(HOMING_X);
+            }
         }
         else
         {
