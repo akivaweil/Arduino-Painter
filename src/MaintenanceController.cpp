@@ -10,7 +10,10 @@ MaintenanceController::MaintenanceController(MovementController& movement)
       maintenanceStep(0),
       stepTimer(0),
       pressurePotActive(false),
-      stateManager(nullptr)
+      waterDiversionActive(false),
+      stateManager(nullptr),
+      primeDurationMs(5000),  // Default 5 seconds
+      cleanDurationMs(3000)   // Default 3 seconds
 {
 }
 
@@ -18,6 +21,8 @@ void MaintenanceController::setup()
 {
     // Initialize pressure pot relay pin
     pinMode(PRESSURE_POT_RELAY, OUTPUT);
+    pinMode(WATER_DIVERSION_RELAY, OUTPUT);  // Initialize water diversion relay
+    digitalWrite(WATER_DIVERSION_RELAY, LOW);  // Ensure it starts deactivated
 
     // Check if the relay is already active (LOW)
     int relayState = digitalRead(PRESSURE_POT_RELAY);
@@ -88,12 +93,29 @@ void MaintenanceController::startCleaning()
 {
     maintenanceStep = 2;
     stepTimer = millis();
+    setWaterDiversion(true);  // Activate water diversion when cleaning starts
     Serial.println(F("Starting cleaning sequence"));
 }
 
 bool MaintenanceController::isRunningMaintenance() const
 {
     return maintenanceStep > 0;
+}
+
+void MaintenanceController::setPrimeDuration(unsigned long seconds)
+{
+    primeDurationMs = seconds * 1000;
+    Serial.print(F("Prime duration set to "));
+    Serial.print(seconds);
+    Serial.println(F(" seconds"));
+}
+
+void MaintenanceController::setCleanDuration(unsigned long seconds)
+{
+    cleanDurationMs = seconds * 1000;
+    Serial.print(F("Clean duration set to "));
+    Serial.print(seconds);
+    Serial.println(F(" seconds"));
 }
 
 void MaintenanceController::executePrimeSequence()
@@ -120,8 +142,8 @@ void MaintenanceController::executePrimeSequence()
         }
     }
     else if (primeStep == 2)
-    {  // Prime for 5 seconds
-        if (millis() - stepTimer >= 5000)
+    {  // Prime for configured duration
+        if (millis() - stepTimer >= primeDurationMs)
         {
             Command stopCmd('S', 0, false);
             movementController.executeCommand(stopCmd);
@@ -129,10 +151,10 @@ void MaintenanceController::executePrimeSequence()
             maintenanceStep = 0;  // Complete maintenance
             Serial.println(F("Prime sequence complete"));
 
-            // Start homing sequence
+            // Start homing sequence properly through HomingController
             if (stateManager)
             {
-                stateManager->setState(HOMING_X);
+                homingController->startHoming();  // Actually start homing
             }
         }
     }
@@ -143,7 +165,7 @@ void MaintenanceController::executeCleanSequence()
     static int cleanStep = 0;
 
     if (cleanStep == 0)
-    {                                   // Move to clean position (x=0, y=20)
+    {
         Command moveX('M', 0, false);   // Move to X=0
         Command moveY('N', 20, false);  // Move to Y=20
         movementController.executeCommand(moveX);
@@ -152,7 +174,7 @@ void MaintenanceController::executeCleanSequence()
         cleanStep = 1;
     }
     else if (cleanStep == 1)
-    {  // Wait for movement to complete
+    {
         if (!movementController.isMoving() && (millis() - stepTimer >= 1000))
         {
             Command sprayCmd('S', 0, true);
@@ -162,8 +184,8 @@ void MaintenanceController::executeCleanSequence()
         }
     }
     else if (cleanStep == 2)
-    {  // Spray cleaner for 10 seconds
-        if (millis() - stepTimer >= 3000)
+    {  // Clean for configured duration
+        if (millis() - stepTimer >= cleanDurationMs)
         {
             Command stopCmd('S', 0, false);
             movementController.executeCommand(stopCmd);
@@ -172,17 +194,18 @@ void MaintenanceController::executeCleanSequence()
         }
     }
     else if (cleanStep == 3)
-    {  // Wait 5 seconds
-        if (millis() - stepTimer >= 5000)
+    {
+        if (millis() - stepTimer >= 5000)  // 5 second wait after cleaning
         {
             cleanStep = 0;
-            maintenanceStep = 0;  // Complete maintenance
+            maintenanceStep = 0;       // Complete maintenance
+            setWaterDiversion(false);  // Deactivate water diversion
             Serial.println(F("Clean sequence complete"));
 
-            // Start homing sequence
+            // Start homing sequence properly through HomingController
             if (stateManager)
             {
-                stateManager->setState(HOMING_X);
+                homingController->startHoming();  // Actually start homing
             }
         }
     }
@@ -191,4 +214,12 @@ void MaintenanceController::executeCleanSequence()
 void MaintenanceController::setStateManager(StateManager* manager)
 {
     stateManager = manager;
+}
+
+void MaintenanceController::setWaterDiversion(bool active)
+{
+    waterDiversionActive = active;
+    digitalWrite(WATER_DIVERSION_RELAY, active ? HIGH : LOW);
+    Serial.print(F("Water diversion "));
+    Serial.println(active ? F("activated") : F("deactivated"));
 }

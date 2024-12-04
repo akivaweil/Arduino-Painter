@@ -36,6 +36,8 @@ void SerialCommandHandler::setup()
     Serial.println(F("  SPEED <side> <value> - Set speed for side (0-100)"));
     Serial.println(F("  ROTATE <degrees> - Rotate specified degrees (+ or -)"));
     Serial.println(F("  PRESSURE   - Toggle pressure pot on/off"));
+    Serial.println(F("  PRIME_TIME <seconds> - Set prime duration"));
+    Serial.println(F("  CLEAN_TIME <seconds> - Set clean duration"));
 }
 
 void SerialCommandHandler::processCommands()
@@ -347,6 +349,42 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
         patternExecutor.stop();
         stateManager.setState(STOPPED);
         responseMsg = "stop activated";
+    }
+    else if (command.startsWith("PRIME_TIME "))
+    {
+        int spaceIndex = command.indexOf(' ');
+        if (spaceIndex != -1)
+        {
+            unsigned long seconds = command.substring(spaceIndex + 1).toInt();
+            if (seconds > 0 && seconds <= 30)  // Limit to reasonable range
+            {
+                maintenanceController.setPrimeDuration(seconds);
+                responseMsg = "Prime duration updated";
+            }
+            else
+            {
+                validCommand = false;
+                responseMsg = "Prime duration must be between 1 and 30 seconds";
+            }
+        }
+    }
+    else if (command.startsWith("CLEAN_TIME "))
+    {
+        int spaceIndex = command.indexOf(' ');
+        if (spaceIndex != -1)
+        {
+            unsigned long seconds = command.substring(spaceIndex + 1).toInt();
+            if (seconds > 0 && seconds <= 30)  // Limit to reasonable range
+            {
+                maintenanceController.setCleanDuration(seconds);
+                responseMsg = "Clean duration updated";
+            }
+            else
+            {
+                validCommand = false;
+                responseMsg = "Clean duration must be between 1 and 30 seconds";
+            }
+        }
     }
     else
     {

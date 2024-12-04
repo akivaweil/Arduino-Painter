@@ -14,6 +14,7 @@ const int PAINT_RELAY_PIN = 26;
 const int X_HOME_SENSOR_PIN = 33;
 const int Y_HOME_SENSOR_PIN = 32;
 const int ROTATION_HOME_SENSOR_PIN = 25;
+const int WATER_DIVERSION_RELAY = 14;  // Using pin 14 for water diversion relay
 
 // Steps per unit - Using integers for exact step counts
 const int X_STEPS_PER_INCH = 32;     // X-axis calibration

@@ -2,6 +2,7 @@
 #ifndef MAINTENANCE_CONTROLLER_H
 #define MAINTENANCE_CONTROLLER_H
 
+#include "HomingController.h"
 #include "MovementController.h"
 
 class MaintenanceController
@@ -22,16 +23,36 @@ class MaintenanceController
 
     unsigned long getPressurePotActiveTime() const;
 
+    // New duration control methods
+    void setPrimeDuration(unsigned long seconds);
+    void setCleanDuration(unsigned long seconds);
+    unsigned long getPrimeDuration() const { return primeDurationMs / 1000; }
+    unsigned long getCleanDuration() const { return cleanDurationMs / 1000; }
+
+    void setStateManager(StateManager* manager);
+    void setHomingController(HomingController* homing)
+    {
+        homingController = homing;
+    }
+
    private:
     MovementController& movementController;
+    HomingController* homingController;
+    StateManager* stateManager;
     int maintenanceStep;
     unsigned long stepTimer;
-    bool pressurePotActive;  // New member to track pressure pot state
+    bool pressurePotActive;     // New member to track pressure pot state
+    bool waterDiversionActive;  // Track water diversion state
 
     unsigned long pressurePotActivationTime;  // Add this line
 
+    // Duration settings (in milliseconds)
+    unsigned long primeDurationMs;  // Duration for priming sequence
+    unsigned long cleanDurationMs;  // Duration for cleaning sequence
+
     void executePrimeSequence();
     void executeCleanSequence();
+    void setWaterDiversion(bool active);  // New helper method
 };
 
 #endif

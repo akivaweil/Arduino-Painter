@@ -14,6 +14,7 @@ CNCController::CNCController()
     // Inject StateManager into controllers
     homingController.setStateManager(&stateManager);
     maintenanceController.setStateManager(&stateManager);
+    maintenanceController.setHomingController(&homingController);
     patternExecutor.setStateManager(&stateManager);
 }
 
