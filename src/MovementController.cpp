@@ -230,6 +230,18 @@ float MovementController::stepsToAngle(long steps) const
 
 bool MovementController::executeCommand(const Command& cmd)
 {
+    // Add rotation command debug logging
+    if (cmd.type == 'R')
+    {
+        Serial.println(F("=== Rotation Command Debug ==="));
+        Serial.print(F("Current steps: "));
+        Serial.println(getCurrentRotationSteps());
+        Serial.print(F("Target value: "));
+        Serial.println(cmd.value);
+        Serial.print(F("Absolute mode: "));
+        Serial.println(cmd.sprayOn ? "true" : "false");
+    }
+
     updateSprayControl(cmd);
 
     long targetSteps = 0;
@@ -256,7 +268,18 @@ bool MovementController::executeCommand(const Command& cmd)
         {
             // Convert degrees to steps
             targetSteps = (cmd.value * 400) / 360;
-            stepperRotation.move(targetSteps);
+            if (cmd.sprayOn)  // If absolute positioning
+            {
+                stepperRotation.moveTo(targetSteps);
+                Serial.print(F("Moving to absolute position: "));
+                Serial.println(targetSteps);
+            }
+            else
+            {
+                stepperRotation.move(targetSteps);
+                Serial.print(F("Moving relative steps: "));
+                Serial.println(targetSteps);
+            }
             break;
         }
 

@@ -150,16 +150,33 @@ void PatternExecutor::update()
                 executingSingleSide = false;
                 movementController.resetToDefaultSpeed();
 
-                // Return rotation to home position
+                // Add debug logging
+                Serial.println(F("=== Pattern Complete Rotation Debug ==="));
+                Serial.print(F("Current rotation steps: "));
+                Serial.println(movementController.getCurrentRotationSteps());
                 long homePos = homingController.getHomeRotationPosition();
-                Command rotateHome('R', 0, false);  // Rotate to 0 degrees
+                Serial.print(F("Home position steps: "));
+                Serial.println(homePos);
+                Serial.println(F("Sending absolute rotation command..."));
+
+                // Return rotation to home position using absolute position
+                Command rotateHome('R', homePos, true);
                 movementController.executeCommand(rotateHome);
+
+                // Add post-command debug
+                Serial.print(F("Post-command rotation steps: "));
+                Serial.println(movementController.getCurrentRotationSteps());
 
                 // Wait for rotation to complete before homing X and Y
                 if (!movementController.isMoving())
                 {
+                    Serial.println(F("Starting full homing sequence..."));
                     homingController.startHoming();
                     reportStatus("AUTO_HOMING", "starting_after_pattern");
+                }
+                else
+                {
+                    Serial.println(F("Waiting for rotation to complete..."));
                 }
             }
             else
@@ -172,7 +189,7 @@ void PatternExecutor::update()
                         rotationNeeded = 180;
                         break;
                     case 2:  // Going to LEFT
-                        rotationNeeded = 90;
+                        rotationNeeded = 270;
                         break;
                     case 3:  // Going to RIGHT
                         rotationNeeded = 180;
@@ -215,6 +232,7 @@ void PatternExecutor::startSingleSide(int side)
         currentRow = 0;
         executingSingleSide = true;
         targetSide = side;
+        currentRotation = 0;  // Reset rotation tracking when starting any side
 
         // Calculate required rotation for the requested side
         int targetRotation;
@@ -234,21 +252,18 @@ void PatternExecutor::startSingleSide(int side)
                 break;
         }
 
-        // Add rotation command to get to correct position
-        int rotationNeeded = targetRotation - currentRotation;
-        if (rotationNeeded != 0)
-        {
-            // Normalize to shortest path (-180 to +180)
-            if (rotationNeeded > 180)
-                rotationNeeded -= 360;
-            if (rotationNeeded < -180)
-                rotationNeeded += 360;
+        // Add debug logging
+        Serial.println(F("=== Starting Single Side Rotation Debug ==="));
+        Serial.print(F("Target rotation: "));
+        Serial.println(targetRotation);
+        Serial.print(F("Current rotation: "));
+        Serial.println(currentRotation);
 
-            Command rotateCmd('R', rotationNeeded, false);
-            movementController.executeCommand(rotateCmd);
-        }
-
+        // Always execute rotation command regardless of current position
+        Command rotateCmd('R', targetRotation, false);
+        movementController.executeCommand(rotateCmd);
         currentRotation = targetRotation;  // Update current rotation
+
         reportStatus("PATTERN_START", "single_side");
     }
     else

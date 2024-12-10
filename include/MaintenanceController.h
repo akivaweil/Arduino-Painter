@@ -5,6 +5,9 @@
 #include "HomingController.h"
 #include "MovementController.h"
 
+// Forward declaration
+class SerialCommandHandler;
+
 class MaintenanceController
 {
    public:
@@ -35,6 +38,9 @@ class MaintenanceController
         homingController = homing;
     }
 
+    void queueDelayedCommand(const String& command);
+    void setSerialHandler(SerialCommandHandler* handler);
+
    private:
     MovementController& movementController;
     HomingController* homingController;
@@ -49,6 +55,10 @@ class MaintenanceController
     // Duration settings (in milliseconds)
     unsigned long primeDurationMs;  // Duration for priming sequence
     unsigned long cleanDurationMs;  // Duration for cleaning sequence
+
+    String queuedCommand;
+    unsigned long commandQueueTime;
+    SerialCommandHandler* serialHandler;
 
     void executePrimeSequence();
     void executeCleanSequence();

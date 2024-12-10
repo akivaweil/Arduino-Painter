@@ -37,6 +37,8 @@ void CNCController::setup()
 
     Serial.println(F("CNC Paint Sprayer Ready"));
     Serial.println(F("Commands: H-Home S-Start E-Stop R-Reset"));
+
+    maintenanceController.setSerialHandler(&serialHandler);
 }
 
 void CNCController::loop()
@@ -44,6 +46,8 @@ void CNCController::loop()
     // Update all subsystems
     movementController.update();
     homingController.update();
+    maintenanceController
+        .update();  // Make sure this is called before processing commands
 
     // Process pattern execution if active
     if (patternExecutor.isExecuting())

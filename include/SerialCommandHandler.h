@@ -4,10 +4,12 @@
 #include <Arduino.h>  // For String class
 
 #include "HomingController.h"
-#include "MaintenanceController.h"
 #include "MovementController.h"
 #include "PatternExecutor.h"
 #include "StateManager.h"
+
+// Forward declaration
+class MaintenanceController;
 
 class SerialCommandHandler
 {
@@ -18,6 +20,9 @@ class SerialCommandHandler
     void setup();
     void processCommands();
 
+    // Make this public so MaintenanceController can use it
+    void handleSystemCommand(const String& command);
+
    private:
     StateManager& stateManager;
     MovementController& movementController;
@@ -25,12 +30,10 @@ class SerialCommandHandler
     PatternExecutor& patternExecutor;
     MaintenanceController& maintenanceController;
 
-    // Updated to accept String parameters instead of char
     void handleManualMovement(const String& command);
     void handleSpeedCommand(const String& command);
-    void handleSystemCommand(const String& command);
-    void sendResponse(bool success, const char* message);
     void handleRotationCommand(const String& command);
+    void sendResponse(bool success, const char* message);
     const char* getStateString(SystemState state);
 };
 

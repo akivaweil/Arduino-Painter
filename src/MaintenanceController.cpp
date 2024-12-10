@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 
+#include "SerialCommandHandler.h"
 #include "config.h"
 
 MaintenanceController::MaintenanceController(MovementController& movement)
@@ -13,7 +14,10 @@ MaintenanceController::MaintenanceController(MovementController& movement)
       waterDiversionActive(false),
       stateManager(nullptr),
       primeDurationMs(5000),  // Default 5 seconds
-      cleanDurationMs(3000)   // Default 3 seconds
+      cleanDurationMs(3000),  // Default 3 seconds
+      queuedCommand(""),
+      commandQueueTime(0),
+      serialHandler(nullptr)
 {
 }
 
@@ -39,6 +43,19 @@ void MaintenanceController::setup()
 
 void MaintenanceController::update()
 {
+    // Check for queued commands that need to be executed first
+    if (queuedCommand.length() > 0 && isPressurePotActive() &&
+        (millis() - pressurePotActivationTime >= 5000))
+    {
+        // Execute the queued command
+        if (serialHandler)
+        {
+            serialHandler->handleSystemCommand(queuedCommand);
+            queuedCommand = "";  // Clear the queue after execution
+            return;              // Return to ensure command is fully processed
+        }
+    }
+
     if (!isRunningMaintenance())
     {
         return;
@@ -189,14 +206,6 @@ void MaintenanceController::executeCleanSequence()
         {
             Command stopCmd('S', 0, false);
             movementController.executeCommand(stopCmd);
-            stepTimer = millis();
-            cleanStep = 3;
-        }
-    }
-    else if (cleanStep == 3)
-    {
-        if (millis() - stepTimer >= 5000)  // 5 second wait after cleaning
-        {
             cleanStep = 0;
             maintenanceStep = 0;       // Complete maintenance
             setWaterDiversion(false);  // Deactivate water diversion
@@ -222,4 +231,15 @@ void MaintenanceController::setWaterDiversion(bool active)
     digitalWrite(WATER_DIVERSION_RELAY, active ? HIGH : LOW);
     Serial.print(F("Water diversion "));
     Serial.println(active ? F("activated") : F("deactivated"));
+}
+
+void MaintenanceController::queueDelayedCommand(const String& command)
+{
+    queuedCommand = command;
+    commandQueueTime = millis();
+}
+
+void MaintenanceController::setSerialHandler(SerialCommandHandler* handler)
+{
+    serialHandler = handler;
 }

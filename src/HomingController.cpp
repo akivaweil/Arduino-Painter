@@ -119,7 +119,6 @@ void HomingController::processRotationHoming()
     {
         if (!initialPositionSet)
         {
-            // If somehow we got here without initial position, set it now
             initialRotationPosition =
                 movementController.getCurrentRotationSteps();
             initialPositionSet = true;
@@ -127,8 +126,16 @@ void HomingController::processRotationHoming()
             Serial.println(initialRotationPosition);
         }
 
-        // Create command to return to initial position
-        Command rotateCmd('R', 0, false);  // Absolute rotation to 0 degrees
+        // Add debug logging
+        Serial.println(F("=== Rotation Homing Debug ==="));
+        Serial.print(F("Current rotation steps: "));
+        Serial.println(movementController.getCurrentRotationSteps());
+        Serial.print(F("Initial rotation position: "));
+        Serial.println(initialRotationPosition);
+        Serial.println(F("Sending absolute rotation command..."));
+
+        // Create command to return to initial position using absolute steps
+        Command rotateCmd('R', initialRotationPosition, true);
         movementController.executeCommand(rotateCmd);
 
         Serial.println(F("Returning to initial rotation position"));

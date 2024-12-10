@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <config.h>
 
+#include "MaintenanceController.h"
+
 SerialCommandHandler::SerialCommandHandler(StateManager& state,
                                            MovementController& movement,
                                            HomingController& homing,
@@ -231,17 +233,22 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
             // Check if pressure pot is active
             if (!maintenanceController.isPressurePotActive())
             {
-                sendResponse(false,
-                             "Pressure pot must be activated before painting");
+                // Instead of rejecting, activate pressure pot and queue command
+                maintenanceController.togglePressurePot();
+                maintenanceController.queueDelayedCommand(command);
+                sendResponse(true,
+                             "Activating pressure pot, command will execute in "
+                             "5 seconds");
                 return;
             }
-
             // Get pressure pot activation time
-            if (maintenanceController.getPressurePotActiveTime() < 5000)
+            else if (maintenanceController.getPressurePotActiveTime() < 5000)
             {
+                // If pot is active but not for 5 seconds, queue the command
+                maintenanceController.queueDelayedCommand(command);
                 sendResponse(
-                    false,
-                    "Pressure pot must be active for at least 5 seconds");
+                    true,
+                    "Waiting for pressure pot, command will execute shortly");
                 return;
             }
 
