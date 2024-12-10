@@ -131,13 +131,13 @@ void PatternExecutor::update()
         {
             reportStatus("PATTERN_COMPLETE", "single_side");
             executingSingleSide = false;
+            currentSide = -1;  // Reset currentSide
             targetSide = -1;
 
-            // Start homing sequence instead of going to IDLE
-            if (stateManager)
-            {
-                stateManager->setState(HOMING_X);
-            }
+            // Start homing sequence
+            homingController.startHoming();
+            return;  // Important: return here to prevent pattern from
+                     // restarting
         }
         else
         {
@@ -182,25 +182,37 @@ void PatternExecutor::update()
             else
             {
                 // Calculate rotation needed for next side
-                int rotationNeeded = 0;
+                int targetRotation = 0;
                 switch (currentSide)
                 {
                     case 1:  // Going to BACK
-                        rotationNeeded = 180;
+                        targetRotation = 180;
                         break;
                     case 2:  // Going to LEFT
-                        rotationNeeded = 270;
+                        targetRotation = 90;
                         break;
                     case 3:  // Going to RIGHT
-                        rotationNeeded = 180;
+                        targetRotation = 270;
                         break;
                 }
 
-                if (rotationNeeded != 0)
+                if (targetRotation != currentRotation)
                 {
-                    Command rotateCmd('R', rotationNeeded, false);
+                    int optimizedRotation =
+                        calculateOptimalRotation(targetRotation);
+
+                    // Debug logging
+                    Serial.println(F("=== Side Change Rotation Debug ==="));
+                    Serial.print(F("Target rotation: "));
+                    Serial.println(targetRotation);
+                    Serial.print(F("Current rotation: "));
+                    Serial.println(currentRotation);
+                    Serial.print(F("Optimized rotation: "));
+                    Serial.println(optimizedRotation);
+
+                    Command rotateCmd('R', optimizedRotation, false);
                     movementController.executeCommand(rotateCmd);
-                    currentRotation = (currentRotation + rotationNeeded) % 360;
+                    currentRotation = targetRotation;
                 }
 
                 reportStatus("SIDE_CHANGE",
@@ -252,15 +264,20 @@ void PatternExecutor::startSingleSide(int side)
                 break;
         }
 
+        // Optimize rotation direction
+        int optimizedRotation = calculateOptimalRotation(targetRotation);
+
         // Add debug logging
         Serial.println(F("=== Starting Single Side Rotation Debug ==="));
         Serial.print(F("Target rotation: "));
         Serial.println(targetRotation);
+        Serial.print(F("Optimized rotation: "));
+        Serial.println(optimizedRotation);
         Serial.print(F("Current rotation: "));
         Serial.println(currentRotation);
 
-        // Always execute rotation command regardless of current position
-        Command rotateCmd('R', targetRotation, false);
+        // Execute optimized rotation
+        Command rotateCmd('R', optimizedRotation, false);
         movementController.executeCommand(rotateCmd);
         currentRotation = targetRotation;  // Update current rotation
 
@@ -320,7 +337,12 @@ void PatternExecutor::processNextCommand()
         return;
     }
 
-    movementController.applyPatternSpeed(getCurrentPatternName());
+    // Only apply pattern speed if we're still executing (not stopped)
+    if (!stopped)
+    {
+        movementController.applyPatternSpeed(getCurrentPatternName());
+    }
+
     Command currentCmd = pattern[currentCommand];
 
     // Report movement events before execution
@@ -387,5 +409,26 @@ String PatternExecutor::getCurrentPatternName() const
             return "RIGHT";
         default:
             return "";
+    }
+}
+
+int PatternExecutor::calculateOptimalRotation(int targetRotation)
+{
+    // Normalize current and target rotations to 0-359 range
+    currentRotation = ((currentRotation % 360) + 360) % 360;
+    targetRotation = ((targetRotation % 360) + 360) % 360;
+
+    // Calculate both clockwise and counterclockwise distances
+    int clockwiseDist = (targetRotation - currentRotation + 360) % 360;
+    int counterclockwiseDist = (currentRotation - targetRotation + 360) % 360;
+
+    // Choose the shorter rotation
+    if (clockwiseDist <= counterclockwiseDist)
+    {
+        return clockwiseDist;
+    }
+    else
+    {
+        return -counterclockwiseDist;
     }
 }

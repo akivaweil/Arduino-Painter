@@ -41,6 +41,8 @@ class PatternExecutor
     Command* getCurrentPattern() const;
     int getCurrentPatternSize() const;
     void processNextCommand();
+
+    int calculateOptimalRotation(int targetRotation);
 };
 
 #endif
