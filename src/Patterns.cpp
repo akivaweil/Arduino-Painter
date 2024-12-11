@@ -3,7 +3,7 @@
 
 Command FRONT[] = {
     // Initial Movement
-    MOVETO_X(3.5 + 0.75, false),  // →3.5→ - Initial offset
+    MOVETO_X(3.5 + .75, false),  // →3.5→ - Initial offset
     MOVETO_Y(0 + 2.25, false),    //
 
     // Row 1
@@ -57,7 +57,7 @@ Command FRONT[] = {
 
 Command BACK[] = {
 
-    MOVETO_X(3.5 + 0.75, false),    // X offset
+    MOVETO_X(3.5 + .75, false),    // X offset
     MOVETO_Y(29.12 + 2.25, false),  // Y offset
 
     // Row 1
@@ -112,8 +112,8 @@ Command BACK[] = {
 Command LEFT[] = {
     // Initial Movement
 
-    MOVETO_X(0 + 0.75, false),    //
-    MOVETO_Y(3.5 + 2.25, false),  // ↑3.5↑ Initial offset
+    MOVETO_X(1.5, false),    //
+    MOVETO_Y(3.5 + 2.75, false),  // ↑3.5↑ Initial offset
 
     // Row 1
     SPRAY_ON(),            // ● - Start spray
@@ -154,8 +154,8 @@ Command LEFT[] = {
 
 Command RIGHT[] = {
 
-    MOVETO_X(0 + 0.75, false),
-    MOVETO_Y(22.075 + 2.25, false),  // ↑3.5↑ Initial offset
+    MOVETO_X(1.5, false),
+    MOVETO_Y(26.49 + 2.25, false),  // ↑3.5↑ Initial offset
 
     // Row 1
     SPRAY_ON(),             // ● - Start spray
