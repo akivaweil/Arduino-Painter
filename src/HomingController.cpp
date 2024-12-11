@@ -115,37 +115,83 @@ void HomingController::processYHoming()
 
 void HomingController::processRotationHoming()
 {
-    if (!movementController.isMoving())
+    // If we haven't sent the rotation command yet
+    if (homing)
     {
-        if (!initialPositionSet)
+        Serial.println(F("=== Rotation Homing State Check ==="));
+        Serial.print(F("Movement in progress: "));
+        Serial.println(movementController.isMoving() ? "YES" : "NO");
+
+        if (!movementController.isMoving())
         {
-            initialRotationPosition =
-                movementController.getCurrentRotationSteps();
-            initialPositionSet = true;
-            Serial.print(F("Late initial rotation position set to: "));
+            if (!initialPositionSet)
+            {
+                initialRotationPosition =
+                    movementController.getCurrentRotationSteps();
+                initialPositionSet = true;
+                Serial.print(F("Late initial rotation position set to: "));
+                Serial.println(initialRotationPosition);
+            }
+
+            // Add debug logging
+            Serial.println(F("=== Rotation Homing Command Preparation ==="));
+            Serial.print(F("Current rotation steps: "));
+            Serial.println(movementController.getCurrentRotationSteps());
+            Serial.print(F("Initial rotation position: "));
             Serial.println(initialRotationPosition);
+            Serial.println(F("Sending absolute rotation command..."));
+
+            // Create command to return to initial position using absolute steps
+            Command rotateCmd('R', initialRotationPosition, true);
+            bool cmdSuccess = movementController.executeCommand(rotateCmd);
+
+            Serial.print(F("Command execution success: "));
+            Serial.println(cmdSuccess ? "YES" : "NO");
+
+            Serial.println(F("Setting homing=false"));
+            homing = false;
+
+            // Set homeComplete immediately if we're already at the target
+            // position
+            if (!movementController.isMoving())
+            {
+                homeComplete = true;
+                if (stateManager)
+                {
+                    Serial.println(
+                        F("Already at home position, transitioning to HOMED"));
+                    stateManager->setState(HOMED);
+                }
+            }
         }
+    }
+    // Check if rotation movement is complete
+    else if (!homeComplete)  // Only process if we ha ven't completed homing yet
+    {
+        Serial.println(F("=== Post-Rotation Movement Check ==="));
+        Serial.print(F("Movement in progress: "));
+        Serial.println(movementController.isMoving() ? "YES" : "NO");
 
-        // Add debug logging
-        Serial.println(F("=== Rotation Homing Debug ==="));
-        Serial.print(F("Current rotation steps: "));
-        Serial.println(movementController.getCurrentRotationSteps());
-        Serial.print(F("Initial rotation position: "));
-        Serial.println(initialRotationPosition);
-        Serial.println(F("Sending absolute rotation command..."));
-
-        // Create command to return to initial position using absolute steps
-        Command rotateCmd('R', initialRotationPosition, true);
-        movementController.executeCommand(rotateCmd);
-
-        Serial.println(F("Returning to initial rotation position"));
-        homing = false;
-        homeComplete = true;
-
-        if (stateManager)
+        if (!movementController.isMoving())
         {
-            Serial.println(F("Homing sequence complete"));
-            stateManager->setState(HOMED);
+            Serial.println(F("=== Final Homing State Check ==="));
+            Serial.print(F("Current position: "));
+            Serial.println(movementController.getCurrentRotationSteps());
+            Serial.print(F("Target position: "));
+            Serial.println(initialRotationPosition);
+            Serial.print(F("Position difference: "));
+            Serial.println(abs(movementController.getCurrentRotationSteps() -
+                               initialRotationPosition));
+
+            homeComplete = true;
+
+            if (stateManager)
+            {
+                Serial.println(F("Attempting to set HOMED state"));
+                stateManager->setState(HOMED);
+                Serial.print(F("New state: "));
+                Serial.println(stateManager->getCurrentState());
+            }
         }
     }
 }
