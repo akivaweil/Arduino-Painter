@@ -294,7 +294,6 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
 
         // Now proceed with homing sequence
         homingController.startHoming();
-        stateManager.setState(HOMING_X);
         responseMsg = "Starting homing sequence";
     }
     else if (command == "PRIME")
@@ -391,6 +390,41 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
                 validCommand = false;
                 responseMsg = "Clean duration must be between 1 and 30 seconds";
             }
+        }
+    }
+    else if (command.startsWith("SET_OFFSET_X "))
+    {
+        float value = command.substring(12).toFloat();
+        patternExecutor.setOffsetX(value);
+        responseMsg = "X offset updated";
+    }
+    else if (command.startsWith("SET_OFFSET_Y "))
+    {
+        float value = command.substring(12).toFloat();
+        patternExecutor.setOffsetY(value);
+        responseMsg = "Y offset updated";
+    }
+    else if (command.startsWith("SET_TRAVEL_X "))
+    {
+        float value = command.substring(12).toFloat();
+        patternExecutor.setTravelX(value);
+        responseMsg = "X travel distance updated";
+    }
+    else if (command.startsWith("SET_TRAVEL_Y "))
+    {
+        float value = command.substring(12).toFloat();
+        patternExecutor.setTravelY(value);
+        responseMsg = "Y travel distance updated";
+    }
+    else if (command.startsWith("SET_GRID "))
+    {
+        int spaceIndex = command.indexOf(' ', 9);
+        if (spaceIndex != -1)
+        {
+            int x = command.substring(9, spaceIndex).toInt();
+            int y = command.substring(spaceIndex + 1).toInt();
+            patternExecutor.setGrid(x, y);
+            responseMsg = "Grid dimensions updated";
         }
     }
     else

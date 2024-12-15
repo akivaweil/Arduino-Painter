@@ -22,8 +22,7 @@ bool StateManager::isValidTransition(SystemState newState) const
     switch (currentState)
     {
         case IDLE:
-            return (newState != ERROR && newState != HOMED) ||
-                   newState == MANUAL_ROTATING;
+            return true;
 
         case ERROR:
             return (newState == IDLE || newState == HOMING_X ||
@@ -31,11 +30,11 @@ bool StateManager::isValidTransition(SystemState newState) const
 
         case HOMING_X:
             return (newState == ERROR || newState == HOMING_Y ||
-                    newState == STOPPED);
+                    newState == STOPPED || newState == HOMED);
 
         case HOMING_Y:
             return (newState == ERROR || newState == HOMING_ROTATION ||
-                    newState == STOPPED);
+                    newState == STOPPED || newState == HOMED);
 
         case HOMING_ROTATION:
             return (newState == ERROR || newState == HOMED ||

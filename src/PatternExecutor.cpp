@@ -103,9 +103,12 @@ PatternExecutor::PatternExecutor(MovementController& movement,
       targetSide(-1),
       executingSingleSide(false),
       stopped(false),
-      currentRow(0)
+      currentRow(0),
+      currentPattern(nullptr)
 {
 }
+
+PatternExecutor::~PatternExecutor() { delete[] currentPattern; }
 
 void PatternExecutor::update()
 {
@@ -150,14 +153,14 @@ void PatternExecutor::update()
                 executingSingleSide = false;
                 movementController.resetToDefaultSpeed();
 
-                // Add debug logging
-                Serial.println(F("=== Pattern Complete Rotation Debug ==="));
-                Serial.print(F("Current rotation steps: "));
-                Serial.println(movementController.getCurrentRotationSteps());
+                // // Add debug logging
+                // Serial.println(F("=== Pattern Complete Rotation Debug ==="));
+                // Serial.print(F("Current rotation steps: "));
+                // Serial.println(movementController.getCurrentRotationSteps());
                 long homePos = homingController.getHomeRotationPosition();
-                Serial.print(F("Home position steps: "));
-                Serial.println(homePos);
-                Serial.println(F("Sending absolute rotation command..."));
+                // Serial.print(F("Home position steps: "));
+                // Serial.println(homePos);
+                // Serial.println(F("Sending absolute rotation command..."));
 
                 // Return rotation to home position using absolute position
                 Command rotateHome('R', homePos, true);
@@ -201,14 +204,14 @@ void PatternExecutor::update()
                     int optimizedRotation =
                         calculateOptimalRotation(targetRotation);
 
-                    // Debug logging
-                    Serial.println(F("=== Side Change Rotation Debug ==="));
-                    Serial.print(F("Target rotation: "));
-                    Serial.println(targetRotation);
-                    Serial.print(F("Current rotation: "));
-                    Serial.println(currentRotation);
-                    Serial.print(F("Optimized rotation: "));
-                    Serial.println(optimizedRotation);
+                    // // Debug logging
+                    // Serial.println(F("=== Side Change Rotation Debug ==="));
+                    // Serial.print(F("Target rotation: "));
+                    // Serial.println(targetRotation);
+                    // Serial.print(F("Current rotation: "));
+                    // Serial.println(currentRotation);
+                    // Serial.print(F("Optimized rotation: "));
+                    // Serial.println(optimizedRotation);
 
                     Command rotateCmd('R', optimizedRotation, false);
                     movementController.executeCommand(rotateCmd);
@@ -267,14 +270,14 @@ void PatternExecutor::startSingleSide(int side)
         // Optimize rotation direction
         int optimizedRotation = calculateOptimalRotation(targetRotation);
 
-        // Add debug logging
-        Serial.println(F("=== Starting Single Side Rotation Debug ==="));
-        Serial.print(F("Target rotation: "));
-        Serial.println(targetRotation);
-        Serial.print(F("Optimized rotation: "));
-        Serial.println(optimizedRotation);
-        Serial.print(F("Current rotation: "));
-        Serial.println(currentRotation);
+        // // Add debug logging
+        // Serial.println(F("=== Starting Single Side Rotation Debug ==="));
+        // Serial.print(F("Target rotation: "));
+        // Serial.println(targetRotation);
+        // Serial.print(F("Optimized rotation: "));
+        // Serial.println(optimizedRotation);
+        // Serial.print(F("Current rotation: "));
+        // Serial.println(currentRotation);
 
         // Execute optimized rotation
         Command rotateCmd('R', optimizedRotation, false);
@@ -296,36 +299,12 @@ bool PatternExecutor::isExecuting() const
 
 Command* PatternExecutor::getCurrentPattern() const
 {
-    switch (currentSide)
-    {
-        case 0:
-            return FRONT;
-        case 1:
-            return BACK;
-        case 2:
-            return LEFT;
-        case 3:
-            return RIGHT;
-        default:
-            return nullptr;
-    }
+    return generatePattern(currentSide);
 }
 
 int PatternExecutor::getCurrentPatternSize() const
 {
-    switch (currentSide)
-    {
-        case 0:
-            return FRONT_SIZE;
-        case 1:
-            return BACK_SIZE;
-        case 2:
-            return LEFT_SIZE;
-        case 3:
-            return RIGHT_SIZE;
-        default:
-            return 0;
-    }
+    return calculatePatternSize(currentSide);
 }
 
 void PatternExecutor::processNextCommand()
@@ -392,6 +371,11 @@ void PatternExecutor::stop()
     executingSingleSide = false;
     currentRow = 0;
     stopped = true;
+
+    // Clean up pattern
+    delete[] currentPattern;
+    currentPattern = nullptr;
+
     reportStatus("PATTERN_STOPPED", "");
 }
 
@@ -431,4 +415,75 @@ int PatternExecutor::calculateOptimalRotation(int targetRotation)
     {
         return -counterclockwiseDist;
     }
+}
+
+Command* PatternExecutor::generatePattern(int side) const
+{
+    // Calculate pattern size
+    int size = calculatePatternSize(side);
+    static Command pattern[100];  // Use a static array with a fixed size
+
+    int idx = 0;
+
+    // Initial movement to offset position
+    pattern[idx++] = MOVETO_X(settings.offsets.x, false);
+    Serial.print(F("Pattern Command: MOVETO_X to "));
+    Serial.println(settings.offsets.x);
+
+    float yOffset = settings.offsets.y;
+    if (side == 1)
+    {  // BACK
+        yOffset =
+            settings.travelDistance.y * settings.rows.y + settings.offsets.y;
+    }
+    pattern[idx++] = MOVETO_Y(yOffset, false);
+    Serial.print(F("Pattern Command: MOVETO_Y to "));
+    Serial.println(yOffset);
+
+    // Generate rows
+    int numRows = (side == 2 || side == 3) ? settings.rows.y : settings.rows.x;
+    float travel = (side == 2 || side == 3) ? settings.travelDistance.x
+                                            : settings.travelDistance.y;
+
+    for (int row = 0; row < numRows; row++)
+    {
+        // Start spray
+        pattern[idx++] = SPRAY_ON();
+        Serial.println(F("Pattern Command: SPRAY_ON"));
+
+        // Move across
+        float dist = (side == 2 || side == 3) ? settings.travelDistance.x
+                                              : settings.travelDistance.y;
+        if (row % 2 == 1)
+            dist = -dist;
+        pattern[idx++] = MOVE_X(dist, true);
+        Serial.print(F("Pattern Command: MOVE_X by "));
+        Serial.println(dist);
+
+        // Stop spray
+        pattern[idx++] = SPRAY_OFF();
+        Serial.println(F("Pattern Command: SPRAY_OFF"));
+
+        // Move to next row if not last row
+        if (row < numRows - 1)
+        {
+            float moveY = travel;
+            if (side == 1 || side == 3)
+                moveY = -moveY;
+            pattern[idx++] = MOVE_Y(moveY, false);
+            Serial.print(F("Pattern Command: MOVE_Y by "));
+            Serial.println(moveY);
+        }
+    }
+
+    return pattern;
+}
+
+int PatternExecutor::calculatePatternSize(int side) const
+{
+    int numRows = (side == 2 || side == 3) ? settings.rows.y : settings.rows.x;
+    // Size = initial moves (2) + per row (spray on + move + spray off + move to
+    // next row) * rows
+    return 2 + (numRows * 4) -
+           1;  // -1 because last row doesn't need vertical move
 }

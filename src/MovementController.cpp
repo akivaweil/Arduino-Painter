@@ -230,17 +230,17 @@ float MovementController::stepsToAngle(long steps) const
 
 bool MovementController::executeCommand(const Command& cmd)
 {
-    // Add rotation command debug logging
-    if (cmd.type == 'R')
-    {
-        Serial.println(F("=== Rotation Command Debug ==="));
-        Serial.print(F("Current steps: "));
-        Serial.println(getCurrentRotationSteps());
-        Serial.print(F("Target value: "));
-        Serial.println(cmd.value);
-        Serial.print(F("Absolute mode: "));
-        Serial.println(cmd.sprayOn ? "true" : "false");
-    }
+    // // Add rotation command debug logging
+    // if (cmd.type == 'R')
+    // {
+    //     Serial.println(F("=== Rotation Command Debug ==="));
+    //     Serial.print(F("Current steps: "));
+    //     Serial.println(getCurrentRotationSteps());
+    //     Serial.print(F("Target value: "));
+    //     Serial.println(cmd.value);
+    //     Serial.print(F("Absolute mode: "));
+    //     Serial.println(cmd.sprayOn ? "true" : "false");
+    // }
 
     updateSprayControl(cmd);
 
