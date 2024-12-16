@@ -200,6 +200,9 @@ void HomingController::startHoming()
 {
     if (!homing)
     {
+        // Turn off spray gun when starting homing
+        digitalWrite(PAINT_RELAY_PIN, LOW);
+
         homing = true;
         homeComplete = false;
         currentAxis = 0;

@@ -351,6 +351,9 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
     }
     else if (command == "STOP")
     {
+        // Ensure spray is off
+        digitalWrite(PAINT_RELAY_PIN, LOW);
+
         movementController.stop();
         patternExecutor.stop();
         stateManager.setState(STOPPED);

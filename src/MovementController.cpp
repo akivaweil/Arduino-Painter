@@ -315,6 +315,7 @@ void MovementController::stop()
     stepperX.stop();
     stepperY.stop();
     stepperRotation.stop();
+    // Ensure spray is turned off
     digitalWrite(PAINT_RELAY_PIN, LOW);
     motorsRunning = false;
 }
@@ -340,8 +341,10 @@ void MovementController::stopMovement()
     stepperY.run();
     stepperRotation.run();
 
-    motorsRunning = false;
+    // Ensure spray is turned off
     digitalWrite(PAINT_RELAY_PIN, LOW);
+
+    motorsRunning = false;
 }
 
 void MovementController::update()
