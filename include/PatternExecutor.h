@@ -25,15 +25,38 @@ class PatternExecutor
     void setStateManager(StateManager* manager) { stateManager = manager; }
 
     // Pattern configuration methods
-    void setOffsetX(float x) { settings.offsets.x = x; }
-    void setOffsetY(float y) { settings.offsets.y = y; }
-    void setTravelX(float x) { settings.travelDistance.x = x; }
-    void setTravelY(float y) { settings.travelDistance.y = y; }
+    void setFrontOffsets(float x, float y)
+    {
+        settings.initialOffsets.front.x = x;
+        settings.initialOffsets.front.y = y;
+    }
+
+    void setBackOffsets(float x, float y)
+    {
+        settings.initialOffsets.back.x = x;
+        settings.initialOffsets.back.y = y;
+    }
+
+    void setLeftOffsets(float x, float y)
+    {
+        settings.initialOffsets.left.x = x;
+        settings.initialOffsets.left.y = y;
+    }
+
+    void setRightOffsets(float x, float y)
+    {
+        settings.initialOffsets.right.x = x;
+        settings.initialOffsets.right.y = y;
+    }
+
     void setGrid(int x, int y)
     {
         settings.rows.x = x;
         settings.rows.y = y;
     }
+
+    void setHorizontalTravel(float x, float y);
+    void setVerticalTravel(float x, float y);
 
     ~PatternExecutor();
 
@@ -48,6 +71,7 @@ class PatternExecutor
     bool stopped;
     int currentRow;
     int currentRotation;
+    mutable int cachedPatternSide;  // Track which side's pattern is cached
 
     PatternSettings settings;
     Command* generatePattern(int side) const;

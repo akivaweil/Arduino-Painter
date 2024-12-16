@@ -51,121 +51,121 @@ void MovementController::configureMotors()
 void MovementController::setPatternSpeed(const String& pattern,
                                          float speedPercentage)
 {
-    // Log input parameters
-    Serial.println(F("--- setPatternSpeed Debug Start ---"));
-    Serial.print(F("Pattern: "));
-    Serial.println(pattern);
-    Serial.print(F("Speed Percentage: "));
-    Serial.println(speedPercentage);
+    // // Log input parameters
+    // Serial.println(F("--- setPatternSpeed Debug Start ---"));
+    // Serial.print(F("Pattern: "));
+    // Serial.println(pattern);
+    // Serial.print(F("Speed Percentage: "));
+    // Serial.println(speedPercentage);
 
     // Validate input parameters
     if (speedPercentage < 0 || speedPercentage > 100)
     {
-        Serial.println(F("ERROR: Speed percentage out of bounds (0-100)"));
+        // Serial.println(F("ERROR: Speed percentage out of bounds (0-100)"));
         return;
     }
 
     // Convert percentage to actual speed (0-100% maps to 0-X_SPEED)
     float targetSpeed = (speedPercentage / 100.0) * X_SPEED;
-    Serial.print(F("Calculated target speed: "));
-    Serial.println(targetSpeed);
+    // Serial.print(F("Calculated target speed: "));
+    // Serial.println(targetSpeed);
 
-    // Log state manager status
-    Serial.print(F("State Manager exists: "));
-    Serial.println(stateManager ? "YES" : "NO");
+    // // Log state manager status
+    // Serial.print(F("State Manager exists: "));
+    // Serial.println(stateManager ? "YES" : "NO");
 
     SystemState currentState = IDLE;  // Default state
     if (stateManager)
     {
         currentState = stateManager->getCurrentState();
-        Serial.print(F("Current system state: "));
-        Serial.println(currentState);
+        // Serial.print(F("Current system state: "));
+        // Serial.println(currentState);
     }
     else
     {
-        Serial.println(F("WARNING: State manager is null"));
+        // Serial.println(F("WARNING: State manager is null"));
     }
 
     bool isPatternActive =
         (currentState == EXECUTING_PATTERN || currentState == PAINTING_SIDE);
-    Serial.print(F("Pattern active: "));
-    Serial.println(isPatternActive ? "YES" : "NO");
+    // Serial.print(F("Pattern active: "));
+    // Serial.println(isPatternActive ? "YES" : "NO");
 
-    // Store speed for appropriate pattern
-    Serial.print(F("Storing speed for pattern: "));
-    Serial.println(pattern);
+    // // Store speed for appropriate pattern
+    // Serial.print(F("Storing speed for pattern: "));
+    // Serial.println(pattern);
 
     if (pattern == "FRONT")
     {
-        Serial.print(F("Previous front speed: "));
-        Serial.println(frontSpeed);
+        // Serial.print(F("Previous front speed: "));
+        // Serial.println(frontSpeed);
         frontSpeed = targetSpeed;
-        Serial.print(F("New front speed: "));
-        Serial.println(frontSpeed);
+        // Serial.print(F("New front speed: "));
+        // Serial.println(frontSpeed);
 
         if (stateManager && isPatternActive)
         {
-            Serial.println(F("Applying speed to X stepper (FRONT)"));
+            // Serial.println(F("Applying speed to X stepper (FRONT)"));
             stepperX.setMaxSpeed(targetSpeed);
-            Serial.print(F("Verified X stepper speed: "));
-            Serial.println(stepperX.maxSpeed());
+            // Serial.print(F("Verified X stepper speed: "));
+            // Serial.println(stepperX.maxSpeed());
         }
     }
     else if (pattern == "BACK")
     {
-        Serial.print(F("Previous back speed: "));
-        Serial.println(backSpeed);
+        // Serial.print(F("Previous back speed: "));
+        // Serial.println(backSpeed);
         backSpeed = targetSpeed;
-        Serial.print(F("New back speed: "));
-        Serial.println(backSpeed);
+        // Serial.print(F("New back speed: "));
+        // Serial.println(backSpeed);
 
         if (stateManager && isPatternActive)
         {
-            Serial.println(F("Applying speed to X stepper (BACK)"));
+            // Serial.println(F("Applying speed to X stepper (BACK)"));
             stepperX.setMaxSpeed(targetSpeed);
-            Serial.print(F("Verified X stepper speed: "));
-            Serial.println(stepperX.maxSpeed());
+            // Serial.print(F("Verified X stepper speed: "));
+            // Serial.println(stepperX.maxSpeed());
         }
     }
     else if (pattern == "LEFT")
     {
-        Serial.print(F("Previous left speed: "));
-        Serial.println(leftSpeed);
+        // Serial.print(F("Previous left speed: "));
+        // Serial.println(leftSpeed);
         leftSpeed = targetSpeed;
-        Serial.print(F("New left speed: "));
-        Serial.println(leftSpeed);
+        // Serial.print(F("New left speed: "));
+        // Serial.println(leftSpeed);
 
         if (stateManager && isPatternActive)
         {
-            Serial.println(F("Applying speed to X stepper (LEFT)"));
+            // Serial.println(F("Applying speed to X stepper (LEFT)"));
             stepperX.setMaxSpeed(targetSpeed);
-            Serial.print(F("Verified X stepper speed: "));
-            Serial.println(stepperX.maxSpeed());
+            // Serial.print(F("Verified X stepper speed: "));
+            // Serial.println(stepperX.maxSpeed());
         }
     }
     else if (pattern == "RIGHT")
     {
-        Serial.print(F("Previous right speed: "));
-        Serial.println(rightSpeed);
+        // Serial.print(F("Previous right speed: "));
+        // Serial.println(rightSpeed);
         rightSpeed = targetSpeed;
-        Serial.print(F("New right speed: "));
-        Serial.println(rightSpeed);
+        // Serial.print(F("New right speed: "));
+        // Serial.println(rightSpeed);
 
         if (stateManager && isPatternActive)
         {
-            Serial.println(F("Applying speed to X stepper (RIGHT)"));
+            // Serial.println(F("Applying speed to X stepper (RIGHT)"));
             stepperX.setMaxSpeed(targetSpeed);
-            Serial.print(F("Verified X stepper speed: "));
-            Serial.println(stepperX.maxSpeed());
+            // Serial.print(F("Verified X stepper speed: "));
+            // Serial.println(stepperX.maxSpeed());
         }
     }
     else
     {
-        Serial.print(F("ERROR: Invalid pattern received: "));
-        Serial.println(pattern);
+        // Serial.print(F("ERROR: Invalid pattern received: "));
+        // Serial.println(pattern);
     }
 
-    Serial.println(F("--- setPatternSpeed Debug End ---"));
+    // Serial.println(F("--- setPatternSpeed Debug End ---"));
 }
 
 void MovementController::applyPatternSpeed(const String& pattern)

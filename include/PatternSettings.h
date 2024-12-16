@@ -5,14 +5,20 @@ struct PatternSettings
 {
     struct
     {
-        float x;
-        float y;
-    } offsets;
+        struct
+        {
+            float x;
+            float y;
+        } front, right, back, left;
+    } initialOffsets;
 
     struct
     {
-        float x;
-        float y;
+        struct
+        {
+            float x;
+            float y;
+        } horizontal, vertical;
     } travelDistance;
 
     struct
@@ -24,12 +30,31 @@ struct PatternSettings
     // Constructor with default values
     PatternSettings()
     {
-        offsets.x = 3.5 + 0.75;    // Default from original pattern
-        offsets.y = 0 + 2.25;      // Default from original pattern
-        travelDistance.x = 26.49;  // Default from original pattern
-        travelDistance.y = 4.16;   // Default from original pattern
-        rows.x = 8;                // Default from original pattern
-        rows.y = 6;                // Default from original pattern
+        // Front offsets
+        initialOffsets.front.x = 3.5 + 0.75;
+        initialOffsets.front.y = 0 + 2.25;
+
+        // Right offsets
+        initialOffsets.right.x = 1.5;
+        initialOffsets.right.y = 26.49 + 2.25;
+
+        // Back offsets
+        initialOffsets.back.x = 3.5 + 0.75;
+        initialOffsets.back.y = 29.12 + 2.25;
+
+        // Left offsets
+        initialOffsets.left.x = 1.5;
+        initialOffsets.left.y = 3.5 + 2.75;
+
+        // Travel distances
+        travelDistance.horizontal.x = 26.49;
+        travelDistance.horizontal.y = 4.16;
+        travelDistance.vertical.x = 33.28;
+        travelDistance.vertical.y = 4.415;
+
+        // Default grid dimensions
+        rows.x = 8;
+        rows.y = 6;
     }
 };
 

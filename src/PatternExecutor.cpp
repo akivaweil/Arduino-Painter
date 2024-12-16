@@ -104,7 +104,8 @@ PatternExecutor::PatternExecutor(MovementController& movement,
       executingSingleSide(false),
       stopped(false),
       currentRow(0),
-      currentPattern(nullptr)
+      currentPattern(nullptr),
+      cachedPatternSide(-1)
 {
 }
 
@@ -299,7 +300,15 @@ bool PatternExecutor::isExecuting() const
 
 Command* PatternExecutor::getCurrentPattern() const
 {
-    return generatePattern(currentSide);
+    if (currentPattern == nullptr || cachedPatternSide != currentSide)
+    {
+        Serial.print(F("Generating new pattern for side: "));
+        Serial.println(currentSide);
+        delete[] currentPattern;
+        currentPattern = generatePattern(currentSide);
+        cachedPatternSide = currentSide;
+    }
+    return currentPattern;
 }
 
 int PatternExecutor::getCurrentPatternSize() const
@@ -375,6 +384,7 @@ void PatternExecutor::stop()
     // Clean up pattern
     delete[] currentPattern;
     currentPattern = nullptr;
+    cachedPatternSide = -1;
 
     reportStatus("PATTERN_STOPPED", "");
 }
@@ -419,60 +429,93 @@ int PatternExecutor::calculateOptimalRotation(int targetRotation)
 
 Command* PatternExecutor::generatePattern(int side) const
 {
-    // Calculate pattern size
-    int size = calculatePatternSize(side);
-    static Command pattern[100];  // Use a static array with a fixed size
+    Serial.println(F("=== Pattern Generation Settings ==="));
+    Serial.print(F("Side: "));
+    Serial.println(side);
 
+    // Get side-specific settings
+    float xOffset, yOffset;
+    float xTravel, yTravel;
+
+    switch (side)
+    {
+        case 0:  // FRONT
+            Serial.println(F("Generating FRONT pattern"));
+            xOffset = settings.initialOffsets.front.x;
+            yOffset = settings.initialOffsets.front.y;
+            xTravel = settings.travelDistance.horizontal.x;
+            yTravel = settings.travelDistance.horizontal.y;
+            break;
+        case 1:  // BACK
+            Serial.println(F("Generating BACK pattern"));
+            xOffset = settings.initialOffsets.back.x;
+            yOffset = settings.initialOffsets.back.y;
+            xTravel = settings.travelDistance.horizontal.x;
+            yTravel = settings.travelDistance.horizontal.y;
+            break;
+        case 2:  // LEFT
+            Serial.println(F("Generating LEFT pattern"));
+            xOffset = settings.initialOffsets.left.x;
+            yOffset = settings.initialOffsets.left.y;
+            xTravel = settings.travelDistance.vertical.x;
+            yTravel = settings.travelDistance.vertical.y;
+            break;
+        case 3:  // RIGHT
+            Serial.println(F("Generating RIGHT pattern"));
+            xOffset = settings.initialOffsets.right.x;
+            yOffset = settings.initialOffsets.right.y;
+            xTravel = settings.travelDistance.vertical.x;
+            yTravel = settings.travelDistance.vertical.y;
+            break;
+    }
+
+    Serial.println(F("Pattern settings:"));
+    Serial.print(F("X Offset: "));
+    Serial.print(xOffset);
+    Serial.print(F(" Y Offset: "));
+    Serial.println(yOffset);
+    Serial.print(F("X Travel: "));
+    Serial.print(xTravel);
+    Serial.print(F(" Y Travel: "));
+    Serial.println(yTravel);
+
+    int size = calculatePatternSize(side);
+    Command* pattern = new Command[size];
     int idx = 0;
 
-    // Initial movement to offset position
-    pattern[idx++] = MOVETO_X(settings.offsets.x, false);
-    Serial.print(F("Pattern Command: MOVETO_X to "));
-    Serial.println(settings.offsets.x);
-
-    float yOffset = settings.offsets.y;
-    if (side == 1)
-    {  // BACK
-        yOffset =
-            settings.travelDistance.y * settings.rows.y + settings.offsets.y;
-    }
+    // Initial positioning
+    pattern[idx++] = MOVETO_X(xOffset, false);
     pattern[idx++] = MOVETO_Y(yOffset, false);
-    Serial.print(F("Pattern Command: MOVETO_Y to "));
-    Serial.println(yOffset);
 
     // Generate rows
-    int numRows = (side == 2 || side == 3) ? settings.rows.y : settings.rows.x;
-    float travel = (side == 2 || side == 3) ? settings.travelDistance.x
-                                            : settings.travelDistance.y;
+    int numRows = (side == 2 || side == 3) ? settings.rows.x : settings.rows.y;
 
     for (int row = 0; row < numRows; row++)
     {
         // Start spray
         pattern[idx++] = SPRAY_ON();
-        Serial.println(F("Pattern Command: SPRAY_ON"));
 
-        // Move across
-        float dist = (side == 2 || side == 3) ? settings.travelDistance.x
-                                              : settings.travelDistance.y;
+        // Move across - Use X movement instead of Y
+        float dist = xTravel;
         if (row % 2 == 1)
+        {
             dist = -dist;
-        pattern[idx++] = MOVE_X(dist, true);
-        Serial.print(F("Pattern Command: MOVE_X by "));
-        Serial.println(dist);
+        }
+        pattern[idx++] = MOVE_X(dist, true);  // Changed from MOVE_Y to MOVE_X
 
         // Stop spray
         pattern[idx++] = SPRAY_OFF();
-        Serial.println(F("Pattern Command: SPRAY_OFF"));
 
-        // Move to next row if not last row
+        // Move to next row if not last row - Use Y movement instead of X
         if (row < numRows - 1)
         {
-            float moveY = travel;
+            float moveY = yTravel;
             if (side == 1 || side == 3)
-                moveY = -moveY;
-            pattern[idx++] = MOVE_Y(moveY, false);
-            Serial.print(F("Pattern Command: MOVE_Y by "));
-            Serial.println(moveY);
+            {                    // BACK or RIGHT
+                moveY = -moveY;  // Invert Y direction for back and right sides
+            }
+            pattern[idx++] =
+                MOVE_Y(moveY, false);  // Changed from MOVE_X to MOVE_Y
         }
     }
 
@@ -481,9 +524,55 @@ Command* PatternExecutor::generatePattern(int side) const
 
 int PatternExecutor::calculatePatternSize(int side) const
 {
-    int numRows = (side == 2 || side == 3) ? settings.rows.y : settings.rows.x;
+    int numRows = (side == 2 || side == 3) ? settings.rows.x : settings.rows.y;
     // Size = initial moves (2) + per row (spray on + move + spray off + move to
     // next row) * rows
     return 2 + (numRows * 4) -
            1;  // -1 because last row doesn't need vertical move
+}
+
+void PatternExecutor::setHorizontalTravel(float x, float y)
+{
+    Serial.println(F("\n=== Setting Horizontal Travel ==="));
+    Serial.print(F("Previous values - X: "));
+    Serial.print(settings.travelDistance.horizontal.x);
+    Serial.print(F(" Y: "));
+    Serial.println(settings.travelDistance.horizontal.y);
+
+    Serial.print(F("New values - X: "));
+    Serial.print(x);
+    Serial.print(F(" Y: "));
+    Serial.println(y);
+
+    settings.travelDistance.horizontal.x = x;
+    settings.travelDistance.horizontal.y = y;
+
+    // Verify the values were set correctly
+    Serial.print(F("Verified values - X: "));
+    Serial.print(settings.travelDistance.horizontal.x);
+    Serial.print(F(" Y: "));
+    Serial.println(settings.travelDistance.horizontal.y);
+}
+
+void PatternExecutor::setVerticalTravel(float x, float y)
+{
+    Serial.println(F("\n=== Setting Vertical Travel ==="));
+    Serial.print(F("Previous values - X: "));
+    Serial.print(settings.travelDistance.vertical.x);
+    Serial.print(F(" Y: "));
+    Serial.println(settings.travelDistance.vertical.y);
+
+    Serial.print(F("New values - X: "));
+    Serial.print(x);
+    Serial.print(F(" Y: "));
+    Serial.println(y);
+
+    settings.travelDistance.vertical.x = x;
+    settings.travelDistance.vertical.y = y;
+
+    // Verify the values were set correctly
+    Serial.print(F("Verified values - X: "));
+    Serial.print(settings.travelDistance.vertical.x);
+    Serial.print(F(" Y: "));
+    Serial.println(settings.travelDistance.vertical.y);
 }

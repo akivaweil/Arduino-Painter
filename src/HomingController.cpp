@@ -67,7 +67,7 @@ void HomingController::update()
 
 void HomingController::processXHoming()
 {
-    if (!xHomeSensor.read())  // Sensor triggered
+    if (xHomeSensor.read())  // Sensor logic inverted
     {
         movementController.stopMovement();
         movementController.setXPosition(0);
@@ -91,7 +91,7 @@ void HomingController::processXHoming()
 
 void HomingController::processYHoming()
 {
-    if (!yHomeSensor.read())  // Sensor triggered
+    if (yHomeSensor.read())  // Sensor logic inverted
     {
         movementController.stopMovement();
         movementController.setYPosition(0);

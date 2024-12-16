@@ -392,30 +392,6 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
             }
         }
     }
-    else if (command.startsWith("SET_OFFSET_X "))
-    {
-        float value = command.substring(12).toFloat();
-        patternExecutor.setOffsetX(value);
-        responseMsg = "X offset updated";
-    }
-    else if (command.startsWith("SET_OFFSET_Y "))
-    {
-        float value = command.substring(12).toFloat();
-        patternExecutor.setOffsetY(value);
-        responseMsg = "Y offset updated";
-    }
-    else if (command.startsWith("SET_TRAVEL_X "))
-    {
-        float value = command.substring(12).toFloat();
-        patternExecutor.setTravelX(value);
-        responseMsg = "X travel distance updated";
-    }
-    else if (command.startsWith("SET_TRAVEL_Y "))
-    {
-        float value = command.substring(12).toFloat();
-        patternExecutor.setTravelY(value);
-        responseMsg = "Y travel distance updated";
-    }
     else if (command.startsWith("SET_GRID "))
     {
         int spaceIndex = command.indexOf(' ', 9);
@@ -425,6 +401,154 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
             int y = command.substring(spaceIndex + 1).toInt();
             patternExecutor.setGrid(x, y);
             responseMsg = "Grid dimensions updated";
+        }
+    }
+    else if (command.startsWith("SET_HORIZONTAL_TRAVEL "))
+    {
+        int spaceIndex = command.indexOf(
+            ' ', 22);  // Correct index after "SET_HORIZONTAL_TRAVEL "
+        if (spaceIndex != -1)
+        {
+            // Debug: Show raw command
+            Serial.print(F("Raw command: "));
+            Serial.println(command);
+
+            String xStr = command.substring(22, spaceIndex);
+            String yStr = command.substring(spaceIndex + 1);
+
+            // Debug: Show parsed strings
+            Serial.print(F("Parsed strings - X: '"));
+            Serial.print(xStr);
+            Serial.print(F("' Y: '"));
+            Serial.print(yStr);
+            Serial.println(F("'"));
+
+            float x = xStr.toFloat();
+            float y = yStr.toFloat();
+
+            // Debug log the received values
+            Serial.println(F("=== SET_HORIZONTAL_TRAVEL Debug ==="));
+            Serial.print(F("Input values - X: "));
+            Serial.print(x);
+            Serial.print(F(" Y: "));
+            Serial.println(y);
+
+            // Validate values
+            if (x <= 0 || y <= 0)
+            {
+                Serial.println(
+                    F("ERROR: Invalid travel distances (must be > 0)"));
+                responseMsg = "Invalid travel distances";
+                validCommand = false;
+            }
+            else
+            {
+                patternExecutor.setHorizontalTravel(x, y);
+                responseMsg = "Horizontal travel distances updated";
+
+                // Debug: Verify values were set
+                Serial.println(F("Travel distances set successfully"));
+            }
+        }
+        else
+        {
+            Serial.println(
+                F("ERROR: Invalid format for SET_HORIZONTAL_TRAVEL"));
+            validCommand = false;
+            responseMsg = "Invalid command format";
+        }
+    }
+    else if (command.startsWith("SET_VERTICAL_TRAVEL "))
+    {
+        int spaceIndex = command.indexOf(
+            ' ', 20);  // Correct index after "SET_VERTICAL_TRAVEL "
+        if (spaceIndex != -1)
+        {
+            // Debug: Show raw command
+            Serial.print(F("Raw command: "));
+            Serial.println(command);
+
+            String xStr = command.substring(20, spaceIndex);
+            String yStr = command.substring(spaceIndex + 1);
+
+            // Debug: Show parsed strings
+            Serial.print(F("Parsed strings - X: '"));
+            Serial.print(xStr);
+            Serial.print(F("' Y: '"));
+            Serial.print(yStr);
+            Serial.println(F("'"));
+
+            float x = xStr.toFloat();
+            float y = yStr.toFloat();
+
+            // Debug log the received values
+            Serial.println(F("=== SET_VERTICAL_TRAVEL Debug ==="));
+            Serial.print(F("Input values - X: "));
+            Serial.print(x);
+            Serial.print(F(" Y: "));
+            Serial.println(y);
+
+            // Validate values
+            if (x <= 0 || y <= 0)
+            {
+                Serial.println(
+                    F("ERROR: Invalid travel distances (must be > 0)"));
+                responseMsg = "Invalid travel distances";
+                validCommand = false;
+            }
+            else
+            {
+                patternExecutor.setVerticalTravel(x, y);
+                responseMsg = "Vertical travel distances updated";
+
+                // Debug: Verify values were set
+                Serial.println(F("Travel distances set successfully"));
+            }
+        }
+        else
+        {
+            Serial.println(F("ERROR: Invalid format for SET_VERTICAL_TRAVEL"));
+            validCommand = false;
+            responseMsg = "Invalid command format";
+        }
+    }
+    else if (command.startsWith("SET_OFFSET "))
+    {
+        // Format: SET_OFFSET <side> <x> <y>
+        int firstSpace = command.indexOf(' ', 11);
+        int secondSpace = command.indexOf(' ', firstSpace + 1);
+
+        if (firstSpace != -1 && secondSpace != -1)
+        {
+            String side = command.substring(11, firstSpace);
+            float x = command.substring(firstSpace + 1, secondSpace).toFloat();
+            float y = command.substring(secondSpace + 1).toFloat();
+
+            if (side == "FRONT")
+            {
+                patternExecutor.setFrontOffsets(x, y);
+                responseMsg = "Front offsets updated";
+            }
+            else if (side == "BACK")
+            {
+                patternExecutor.setBackOffsets(x, y);
+                responseMsg = "Back offsets updated";
+            }
+            else if (side == "LEFT")
+            {
+                patternExecutor.setLeftOffsets(x, y);
+                responseMsg = "Left offsets updated";
+            }
+            else if (side == "RIGHT")
+            {
+                patternExecutor.setRightOffsets(x, y);
+                responseMsg = "Right offsets updated";
+            }
+            else
+            {
+                validCommand = false;
+                responseMsg = "Invalid side specified";
+            }
         }
     }
     else
