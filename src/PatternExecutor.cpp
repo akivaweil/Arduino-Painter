@@ -443,29 +443,29 @@ Command* PatternExecutor::generatePattern(int side) const
             Serial.println(F("Generating FRONT pattern"));
             xOffset = settings.initialOffsets.front.x;
             yOffset = settings.initialOffsets.front.y;
-            xTravel = settings.travelDistance.horizontal.x;
-            yTravel = settings.travelDistance.horizontal.y;
+            xTravel = settings.travelDistance.vertical.x;
+            yTravel = settings.travelDistance.vertical.y;
             break;
         case 1:  // BACK
             Serial.println(F("Generating BACK pattern"));
             xOffset = settings.initialOffsets.back.x;
             yOffset = settings.initialOffsets.back.y;
-            xTravel = settings.travelDistance.horizontal.x;
-            yTravel = settings.travelDistance.horizontal.y;
+            xTravel = settings.travelDistance.vertical.x;
+            yTravel = settings.travelDistance.vertical.y;
             break;
         case 2:  // LEFT
             Serial.println(F("Generating LEFT pattern"));
             xOffset = settings.initialOffsets.left.x;
             yOffset = settings.initialOffsets.left.y;
-            xTravel = settings.travelDistance.vertical.x;
-            yTravel = settings.travelDistance.vertical.y;
+            xTravel = settings.travelDistance.horizontal.x;
+            yTravel = settings.travelDistance.horizontal.y;
             break;
         case 3:  // RIGHT
             Serial.println(F("Generating RIGHT pattern"));
             xOffset = settings.initialOffsets.right.x;
             yOffset = settings.initialOffsets.right.y;
-            xTravel = settings.travelDistance.vertical.x;
-            yTravel = settings.travelDistance.vertical.y;
+            xTravel = settings.travelDistance.horizontal.x;
+            yTravel = settings.travelDistance.horizontal.y;
             break;
     }
 
