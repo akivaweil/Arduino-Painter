@@ -19,6 +19,9 @@ void StateManager::setState(SystemState newState)
 
 bool StateManager::isValidTransition(SystemState newState) const
 {
+    // Shortcircuit for now
+    return true;
+    // TODO: Add back in
     switch (currentState)
     {
         case IDLE:

@@ -13,8 +13,9 @@ MaintenanceController::MaintenanceController(MovementController& movement)
       pressurePotActive(false),
       waterDiversionActive(false),
       stateManager(nullptr),
-      primeDurationMs(5000),  // Default 5 seconds
-      cleanDurationMs(3000),  // Default 3 seconds
+      primeDurationMs(5000),     // Default 5 seconds
+      cleanDurationMs(3000),     // Default 3 seconds
+      backWashDurationMs(5000),  // Default 5 seconds
       queuedCommand(""),
       commandQueueTime(0),
       serialHandler(nullptr)
@@ -39,6 +40,9 @@ void MaintenanceController::setup()
         pressurePotActivationTime = millis() - 6000;  // 6 seconds ago
         Serial.println(F("Pressure pot was already active"));
     }
+
+    pinMode(BACK_WASH_RELAY_PIN, OUTPUT);
+    digitalWrite(BACK_WASH_RELAY_PIN, LOW);  // Ensure it starts deactivated
 }
 
 void MaintenanceController::update()
@@ -68,6 +72,9 @@ void MaintenanceController::update()
             break;
         case 2:  // Cleaning sequence
             executeCleanSequence();
+            break;
+        case 3:  // Back wash sequence
+            executeBackWashSequence();
             break;
     }
 }
@@ -218,6 +225,38 @@ void MaintenanceController::executeCleanSequence()
             }
         }
     }
+}
+
+void MaintenanceController::startBackWash()
+{
+    maintenanceStep = 3;
+    stepTimer = millis();
+    digitalWrite(BACK_WASH_RELAY_PIN, HIGH);
+    Serial.println(F("Starting back wash sequence"));
+}
+
+void MaintenanceController::executeBackWashSequence()
+{
+    if (millis() - stepTimer >= backWashDurationMs)
+    {
+        digitalWrite(BACK_WASH_RELAY_PIN, LOW);
+        maintenanceStep = 0;  // Complete maintenance
+        Serial.println(F("Back wash sequence complete"));
+
+        // Return to previous state
+        if (stateManager)
+        {
+            stateManager->setState(stateManager->getPreviousState());
+        }
+    }
+}
+
+void MaintenanceController::setBackWashDuration(unsigned long seconds)
+{
+    backWashDurationMs = seconds * 1000;
+    Serial.print(F("Back wash duration set to "));
+    Serial.print(seconds);
+    Serial.println(F(" seconds"));
 }
 
 void MaintenanceController::setStateManager(StateManager* manager)

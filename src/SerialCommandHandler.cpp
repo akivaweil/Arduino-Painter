@@ -40,6 +40,8 @@ void SerialCommandHandler::setup()
     Serial.println(F("  PRESSURE   - Toggle pressure pot on/off"));
     Serial.println(F("  PRIME_TIME <seconds> - Set prime duration"));
     Serial.println(F("  CLEAN_TIME <seconds> - Set clean duration"));
+    Serial.println(F("  BACK_WASH  - Activate back wash"));
+    Serial.println(F("  BACK_WASH_TIME <seconds> - Set back wash duration"));
 }
 
 void SerialCommandHandler::processCommands()
@@ -554,6 +556,43 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
             }
         }
     }
+    else if (command == "BACK_WASH")
+    {
+        if (currentState == IDLE || currentState == HOMED)
+        {
+            maintenanceController.startBackWash();
+            stateManager.setState(BACK_WASHING);
+            responseMsg = "Starting back wash sequence";
+        }
+        else
+        {
+            validCommand = false;
+            snprintf(
+                responseBuffer, sizeof(responseBuffer),
+                "Can only back wash from IDLE or HOMED state (current: %s)",
+                getStateString(currentState));
+            responseMsg = responseBuffer;
+        }
+    }
+    else if (command.startsWith("BACK_WASH_TIME "))
+    {
+        int spaceIndex = command.indexOf(' ');
+        if (spaceIndex != -1)
+        {
+            unsigned long seconds = command.substring(spaceIndex + 1).toInt();
+            if (seconds > 0 && seconds <= 30)  // Limit to reasonable range
+            {
+                maintenanceController.setBackWashDuration(seconds);
+                responseMsg = "Back wash duration updated";
+            }
+            else
+            {
+                validCommand = false;
+                responseMsg =
+                    "Back wash duration must be between 1 and 30 seconds";
+            }
+        }
+    }
     else
     {
         validCommand = false;
@@ -603,6 +642,8 @@ const char* SerialCommandHandler::getStateString(SystemState state)
             return "PAUSED";
         case MANUAL_ROTATING:
             return "MANUAL_ROTATING";
+        case BACK_WASHING:
+            return "BACK_WASHING";
         default:
             return "UNKNOWN";
     }

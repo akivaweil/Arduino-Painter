@@ -41,6 +41,13 @@ class MaintenanceController
     void queueDelayedCommand(const String& command);
     void setSerialHandler(SerialCommandHandler* handler);
 
+    void startBackWash();
+    void setBackWashDuration(unsigned long seconds);
+    unsigned long getBackWashDuration() const
+    {
+        return backWashDurationMs / 1000;
+    }
+
    private:
     MovementController& movementController;
     HomingController* homingController;
@@ -53,8 +60,9 @@ class MaintenanceController
     unsigned long pressurePotActivationTime;  // Add this line
 
     // Duration settings (in milliseconds)
-    unsigned long primeDurationMs;  // Duration for priming sequence
-    unsigned long cleanDurationMs;  // Duration for cleaning sequence
+    unsigned long primeDurationMs;     // Duration for priming sequence
+    unsigned long cleanDurationMs;     // Duration for cleaning sequence
+    unsigned long backWashDurationMs;  // Duration for back wash sequence
 
     String queuedCommand;
     unsigned long commandQueueTime;
@@ -63,6 +71,7 @@ class MaintenanceController
     void executePrimeSequence();
     void executeCleanSequence();
     void setWaterDiversion(bool active);  // New helper method
+    void executeBackWashSequence();
 };
 
 #endif
