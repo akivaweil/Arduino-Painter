@@ -3,195 +3,188 @@
 
 Command FRONT[] = {
     // Initial Movement
-    MOVETO_X(3.5 + .75, false),  // →3.5→ - Initial offset
-    MOVETO_Y(0 + 2.25, false),    //
+    MOVETO_X(3.0 + .75, false),  // →3.0→ - Initial offset
+    MOVETO_Y(0 + 2.75, false),    //
 
     // Row 1
     SPRAY_ON(),           // ● - Start spray
-    MOVE_X(26.49, true),  // →26.49→ - Move right with spray
+    MOVE_X(27.49, true),  // →27.49→ - Move right with spray
     SPRAY_OFF(),          // ○ - Stop spray
     MOVE_Y(4.16, false),  // ↑4.16↑ - Move up
 
     // Row 2
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-26.49, true),  // ←26.49← - Move left with spray
+    MOVE_X(-27.49, true),  // ←27.49← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(4.16, false),   // ↑4.16↑ - Move up
 
     // Row 3
     SPRAY_ON(),           // ● - Start spray
-    MOVE_X(26.49, true),  // →26.49→ - Move right with spray
+    MOVE_X(27.49, true),  // →27.49→ - Move right with spray
     SPRAY_OFF(),          // ○ - Stop spray
     MOVE_Y(4.16, false),  // ↑4.16↑ - Move up
 
     // Row 4
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-26.49, true),  // ←26.49← - Move left with spray
+    MOVE_X(-27.49, true),  // ←27.49← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(4.16, false),   // ↑4.16↑ - Move up
 
     // Row 5
     SPRAY_ON(),           // ● - Start spray
-    MOVE_X(26.49, true),  // →26.49→ - Move right with spray
+    MOVE_X(27.49, true),  // →27.49→ - Move right with spray
     SPRAY_OFF(),          // ○ - Stop spray
     MOVE_Y(4.16, false),  // ↑4.16↑ - Move up
 
     // Row 6
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-26.49, true),  // ←26.49← - Move left with spray
+    MOVE_X(-27.49, true),  // ←27.49← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(4.16, false),   // ↑4.16↑ - Move up
 
     // Row 7
     SPRAY_ON(),           // ● - Start spray
-    MOVE_X(26.49, true),  // →26.49→ - Move right with spray
+    MOVE_X(27.49, true),  // →27.49→ - Move right with spray
     SPRAY_OFF(),          // ○ - Stop spray
     MOVE_Y(4.16, false),  // ↑4.16↑ - Move up
 
     // Row 8
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-26.49, true),  // ←26.49← - Move left with spray
+    MOVE_X(-27.49, true),  // ←27.49← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
-
 };
 
 Command BACK[] = {
-
-    MOVETO_X(3.5 + .75, false),    // X offset
-    MOVETO_Y(29.12 + 2.25, false),  // Y offset
+    MOVETO_X(3.0 + .75, false),    // X offset
+    MOVETO_Y(29.12 + 2.75, false),  // Y offset
 
     // Row 1
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(26.49, true),   // →26.49→ - Move right with spray
+    MOVE_X(27.49, true),   // →27.49→ - Move right with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(-4.16, false),  // ↓4.16↓ - Move down
 
     // Row 2
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-26.49, true),  // ←26.49← - Move left with spray
+    MOVE_X(-27.49, true),  // ←27.49← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(-4.16, false),  // ↓4.16↓ - Move down
 
     // Row 3
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(26.49, true),   // →26.49→ - Move right with spray
+    MOVE_X(27.49, true),   // →27.49→ - Move right with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(-4.16, false),  // ↓4.16↓ - Move down
 
     // Row 4
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-26.49, true),  // ←26.49← - Move left with spray
+    MOVE_X(-27.49, true),  // ←27.49← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(-4.16, false),  // ↓4.16↓ - Move down
 
     // Row 5
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(26.49, true),   // →26.49→ - Move right with spray
+    MOVE_X(27.49, true),   // →27.49→ - Move right with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(-4.16, false),  // ↓4.16↓ - Move down
 
     // Row 6
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-26.49, true),  // ←26.49← - Move left with spray
+    MOVE_X(-27.49, true),  // ←27.49← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(-4.16, false),  // ↓4.16↓ - Move down
 
     // Row 7
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(26.49, true),   // →26.49→ - Move right with spray
+    MOVE_X(27.49, true),   // →27.49→ - Move right with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(-4.16, false),  // ↓4.16↓ - Move down
 
     // Row 8
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-26.49, true),  // ←26.49← - Move left with spray
+    MOVE_X(-27.49, true),  // ←27.49← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
-
 };
 
 Command LEFT[] = {
     // Initial Movement
-
-    MOVETO_X(1.5, false),    //
-    MOVETO_Y(3.5 + 2.75, false),  // ↑3.5↑ Initial offset
+    MOVETO_X(1.0, false),    //
+    MOVETO_Y(3.5 + 3.25, false),  // ↑3.5↑ Initial offset
 
     // Row 1
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(33.28, true),   // →33.28→ - Move right with spray
+    MOVE_X(34.28, true),   // →34.28→ - Move right with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(4.415, false),  // ↑4.415↑ - Move up
 
     // Row 2
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-33.28, true),  // ←33.28← - Move left with spray
+    MOVE_X(-34.28, true),  // ←34.28← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(4.415, false),  // ↑4.415↑ - Move up
 
     // Row 3
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(33.28, true),   // →33.28→ - Move right with spray
+    MOVE_X(34.28, true),   // →34.28→ - Move right with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(4.415, false),  // ↑4.415↑ - Move up
 
     // Row 4
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-33.28, true),  // ←33.28← - Move left with spray
+    MOVE_X(-34.28, true),  // ←34.28← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(4.415, false),  // ↑4.415↑ - Move up
 
     // Row 5
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(33.28, true),   // →33.28→ - Move right with spray
+    MOVE_X(34.28, true),   // →34.28→ - Move right with spray
     SPRAY_OFF(),           // ○ - Stop spray
     MOVE_Y(4.415, false),  // ↑4.415↑ - Move up
 
     // Row 6
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-33.28, true),  // ←33.28← - Move left with spray
+    MOVE_X(-34.28, true),  // ←34.28← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
-
 };
 
 Command RIGHT[] = {
-
-    MOVETO_X(1.5, false),
-    MOVETO_Y(26.49 + 2.25, false),  // ↑3.5↑ Initial offset
+    MOVETO_X(1.0, false),
+    MOVETO_Y(26.49 + 3.25, false),  // ↑3.5↑ Initial offset
 
     // Row 1
     SPRAY_ON(),             // ● - Start spray
-    MOVE_X(33.28, true),    // →33.28→ - Move right with spray
+    MOVE_X(34.28, true),    // →34.28→ - Move right with spray
     SPRAY_OFF(),            // ○ - Stop spray
     MOVE_Y(-4.415, false),  // ↓4.415↓ - Move down
 
     // Row 2
     SPRAY_ON(),             // ● - Start spray
-    MOVE_X(-33.28, true),   // ←33.28← - Move left with spray
+    MOVE_X(-34.28, true),   // ←34.28← - Move left with spray
     SPRAY_OFF(),            // ○ - Stop spray
     MOVE_Y(-4.415, false),  // ↓4.415↓ - Move down
 
     // Row 3
     SPRAY_ON(),             // ● - Start spray
-    MOVE_X(33.28, true),    // →33.28→ - Move right with spray
+    MOVE_X(34.28, true),    // →34.28→ - Move right with spray
     SPRAY_OFF(),            // ○ - Stop spray
     MOVE_Y(-4.415, false),  // ↓4.415↓ - Move down
 
     // Row 4
     SPRAY_ON(),             // ● - Start spray
-    MOVE_X(-33.28, true),   // ←33.28← - Move left with spray
+    MOVE_X(-34.28, true),   // ←34.28← - Move left with spray
     SPRAY_OFF(),            // ○ - Stop spray
     MOVE_Y(-4.415, false),  // ↓4.415↓ - Move down
 
     // Row 5
     SPRAY_ON(),             // ● - Start spray
-    MOVE_X(33.28, true),    // →33.28→ - Move right with spray
+    MOVE_X(34.28, true),    // →34.28→ - Move right with spray
     SPRAY_OFF(),            // ○ - Stop spray
     MOVE_Y(-4.415, false),  // ↓4.415↓ - Move down
 
     // Row 6
     SPRAY_ON(),            // ● - Start spray
-    MOVE_X(-33.28, true),  // ←33.28← - Move left with spray
+    MOVE_X(-34.28, true),  // ←34.28← - Move left with spray
     SPRAY_OFF(),           // ○ - Stop spray
-
 };
 
 const int FRONT_SIZE = sizeof(FRONT) / sizeof(Command);
