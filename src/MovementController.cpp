@@ -299,12 +299,12 @@ void MovementController::updateSprayControl(const Command& cmd)
 {
     if (cmd.type == 'S')
     {
-        digitalWrite(PAINT_RELAY_PIN, cmd.sprayOn ? HIGH : LOW);
+        digitalWrite(PAINT_RELAY_PIN, cmd.sprayOn ? LOW : HIGH);
     }
     else if (cmd.sprayOn && (cmd.type == 'X' || cmd.type == 'Y' ||
                              cmd.type == 'M' || cmd.type == 'N'))
     {
-        digitalWrite(PAINT_RELAY_PIN, HIGH);
+        digitalWrite(PAINT_RELAY_PIN, LOW);
     }
 }
 
@@ -316,7 +316,7 @@ void MovementController::stop()
     stepperY.stop();
     stepperRotation.stop();
     // Ensure spray is turned off
-    digitalWrite(PAINT_RELAY_PIN, LOW);
+    digitalWrite(PAINT_RELAY_PIN, HIGH);
     motorsRunning = false;
 }
 
@@ -342,7 +342,7 @@ void MovementController::stopMovement()
     stepperRotation.run();
 
     // Ensure spray is turned off
-    digitalWrite(PAINT_RELAY_PIN, LOW);
+    digitalWrite(PAINT_RELAY_PIN, HIGH);
 
     motorsRunning = false;
 }
@@ -366,7 +366,7 @@ void MovementController::update()
     if (previouslyRunning && !motorsRunning)
     {
         // Turn off spray
-        digitalWrite(PAINT_RELAY_PIN, LOW);
+        digitalWrite(PAINT_RELAY_PIN, HIGH);
 
         // If we were in manual rotation mode, transition back to appropriate
         // state

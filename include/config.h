@@ -3,23 +3,23 @@
 #define CONFIG_H
 
 // Pin Definitions
-const int X_STEP_PIN = 22;
-const int X_DIR_PIN = 23;
+const int X_STEP_PIN = 2;
+const int X_DIR_PIN = 3;
 
-const int Y_STEP_PIN = 13;
-const int Y_DIR_PIN = 39;
+const int Y_STEP_PIN = 4;
+const int Y_DIR_PIN = 5;
 
-const int ROTATION_STEP_PIN = 15;
-const int ROTATION_DIR_PIN = 4;
+const int ROTATION_STEP_PIN = 6;
+const int ROTATION_DIR_PIN = 7;
 
-const int PRESSURE_POT_RELAY = 5;
-const int PAINT_RELAY_PIN = 18;
-const int WATER_DIVERSION_RELAY = 19;
-const int BACK_WASH_RELAY_PIN = 21;
+const int PRESSURE_POT_RELAY = 14;
+const int PAINT_RELAY_PIN = 15;
+const int WATER_DIVERSION_RELAY = 17;
+const int BACK_WASH_RELAY_PIN = 16;
 
-const int X_HOME_SENSOR_PIN = 33;
-const int Y_HOME_SENSOR_PIN = 32;
-const int ROTATION_HOME_SENSOR_PIN = 25;
+const int X_HOME_SENSOR_PIN = 11;
+const int Y_HOME_SENSOR_PIN = 10;
+const int ROTATION_HOME_SENSOR_PIN = 12;
 
 // Steps per unit - Using integers for exact step counts
 const int X_STEPS_PER_INCH = 32;     // X-axis calibration

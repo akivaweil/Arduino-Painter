@@ -27,7 +27,7 @@ void MaintenanceController::setup()
     // Initialize pressure pot relay pin
     pinMode(PRESSURE_POT_RELAY, OUTPUT);
     pinMode(WATER_DIVERSION_RELAY, OUTPUT);  // Initialize water diversion relay
-    digitalWrite(WATER_DIVERSION_RELAY, LOW);  // Ensure it starts deactivated
+    digitalWrite(WATER_DIVERSION_RELAY, HIGH);  // Ensure it starts deactivated
 
     // Check if the relay is already active (LOW)
     int relayState = digitalRead(PRESSURE_POT_RELAY);
@@ -42,7 +42,7 @@ void MaintenanceController::setup()
     }
 
     pinMode(BACK_WASH_RELAY_PIN, OUTPUT);
-    digitalWrite(BACK_WASH_RELAY_PIN, LOW);  // Ensure it starts deactivated
+    digitalWrite(BACK_WASH_RELAY_PIN, HIGH);  // Ensure it starts deactivated
 }
 
 void MaintenanceController::update()
@@ -86,7 +86,7 @@ void MaintenanceController::togglePressurePot()
     {
         pressurePotActivationTime = millis();
     }
-    digitalWrite(PRESSURE_POT_RELAY, pressurePotActive ? HIGH : LOW);
+    digitalWrite(PRESSURE_POT_RELAY, pressurePotActive ? LOW : HIGH);
 
     Serial.print(F("Pressure pot "));
     Serial.println(pressurePotActive ? F("activated") : F("deactivated"));
@@ -231,7 +231,7 @@ void MaintenanceController::startBackWash()
 {
     maintenanceStep = 3;
     stepTimer = millis();
-    digitalWrite(BACK_WASH_RELAY_PIN, HIGH);
+    digitalWrite(BACK_WASH_RELAY_PIN, LOW);
     Serial.println(F("Starting back wash sequence"));
 }
 
@@ -239,7 +239,7 @@ void MaintenanceController::executeBackWashSequence()
 {
     if (millis() - stepTimer >= backWashDurationMs)
     {
-        digitalWrite(BACK_WASH_RELAY_PIN, LOW);
+        digitalWrite(BACK_WASH_RELAY_PIN, HIGH);
         maintenanceStep = 0;  // Complete maintenance
         Serial.println(F("Back wash sequence complete"));
 
@@ -267,7 +267,7 @@ void MaintenanceController::setStateManager(StateManager* manager)
 void MaintenanceController::setWaterDiversion(bool active)
 {
     waterDiversionActive = active;
-    digitalWrite(WATER_DIVERSION_RELAY, active ? HIGH : LOW);
+    digitalWrite(WATER_DIVERSION_RELAY, active ? LOW : HIGH);
     Serial.print(F("Water diversion "));
     Serial.println(active ? F("activated") : F("deactivated"));
 }

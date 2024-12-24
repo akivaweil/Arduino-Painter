@@ -146,6 +146,13 @@ void PatternExecutor::update()
         else
         {
             currentSide++;
+            // Skip the back pattern (side 1)
+            if (currentSide == 1)
+            {
+                currentSide++;
+                reportStatus("SIDE_SKIP", "skipping_back_side");
+            }
+
             if (currentSide >= 4)
             {
                 reportStatus("PATTERN_COMPLETE", "all_sides");

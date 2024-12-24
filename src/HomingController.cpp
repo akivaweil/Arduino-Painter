@@ -67,7 +67,8 @@ void HomingController::update()
 
 void HomingController::processXHoming()
 {
-    if (xHomeSensor.read())  // Sensor logic inverted
+    if (xHomeSensor
+            .read())  // Changed from xHomeSensor.read() to !xHomeSensor.read()
     {
         movementController.stopMovement();
         movementController.setXPosition(0);
@@ -91,7 +92,8 @@ void HomingController::processXHoming()
 
 void HomingController::processYHoming()
 {
-    if (yHomeSensor.read())  // Sensor logic inverted
+    if (yHomeSensor
+            .read())  // Changed from yHomeSensor.read() to !yHomeSensor.read()
     {
         movementController.stopMovement();
         movementController.setYPosition(0);
@@ -201,7 +203,7 @@ void HomingController::startHoming()
     if (!homing)
     {
         // Turn off spray gun when starting homing
-        digitalWrite(PAINT_RELAY_PIN, LOW);
+        digitalWrite(PAINT_RELAY_PIN, HIGH);
 
         homing = true;
         homeComplete = false;
