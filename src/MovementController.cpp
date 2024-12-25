@@ -4,6 +4,9 @@
 
 #include "config.h"
 
+const float MAX_X_TRAVEL_INCHES = 30.0;
+const float MAX_Y_TRAVEL_INCHES = 30.0;
+
 MovementController::MovementController()
     : stepperX(AccelStepper::DRIVER, X_STEP_PIN, X_DIR_PIN),
       stepperY(AccelStepper::DRIVER, Y_STEP_PIN, Y_DIR_PIN),
@@ -245,23 +248,32 @@ bool MovementController::executeCommand(const Command& cmd)
     updateSprayControl(cmd);
 
     long targetSteps = 0;
+    float targetPosition = 0.0;
 
     switch (cmd.type)
     {
         case 'X':  // Relative X movement
-            stepperX.move(cmd.value * X_STEPS_PER_INCH);
+            targetSteps = getCurrentXSteps() + (cmd.value * X_STEPS_PER_INCH);
+            enforceXLimit(targetSteps);
+            stepperX.moveTo(targetSteps);
             break;
 
         case 'Y':  // Relative Y movement
-            stepperY.move(cmd.value * Y_STEPS_PER_INCH);
+            targetSteps = getCurrentYSteps() + (cmd.value * Y_STEPS_PER_INCH);
+            enforceYLimit(targetSteps);
+            stepperY.moveTo(targetSteps);
             break;
 
         case 'M':  // Absolute X movement
-            stepperX.moveTo(cmd.value * X_STEPS_PER_INCH);
+            targetSteps = cmd.value * X_STEPS_PER_INCH;
+            enforceXLimit(targetSteps);
+            stepperX.moveTo(targetSteps);
             break;
 
         case 'N':  // Absolute Y movement
-            stepperY.moveTo(cmd.value * Y_STEPS_PER_INCH);
+            targetSteps = cmd.value * Y_STEPS_PER_INCH;
+            enforceYLimit(targetSteps);
+            stepperY.moveTo(targetSteps);
             break;
 
         case 'R':  // Rotation movement (in degrees)
@@ -345,6 +357,8 @@ void MovementController::stopMovement()
     digitalWrite(PAINT_RELAY_PIN, HIGH);
 
     motorsRunning = false;
+    continuousMovementActive = false;
+    continuousDiagonalActive = false;
 }
 
 void MovementController::update()
@@ -383,6 +397,31 @@ void MovementController::update()
             }
         }
     }
+
+    // Handle continuous movement
+    if (continuousMovementActive)
+    {
+        AccelStepper& stepper = continuousMovementIsX ? stepperX : stepperY;
+        if (!stepper.isRunning())
+        {
+            // If we've somehow reached the target, set a new one
+            long newTarget = continuousMovementPositive ? 999999L : -999999L;
+            stepper.moveTo(newTarget);
+        }
+    }
+
+    // Handle continuous diagonal movement
+    if (continuousDiagonalActive)
+    {
+        if (!stepperX.isRunning() || !stepperY.isRunning())
+        {
+            // If either motor has reached its target, set new targets
+            long newTargetX = continuousDiagonalXPositive ? 999999L : -999999L;
+            long newTargetY = continuousDiagonalYPositive ? 999999L : -999999L;
+            stepperX.moveTo(newTargetX);
+            stepperY.moveTo(newTargetY);
+        }
+    }
 }
 
 void MovementController::setXPosition(long position)
@@ -402,3 +441,110 @@ void MovementController::setXSpeed(float speed) { stepperX.setMaxSpeed(speed); }
 void MovementController::setYSpeed(float speed) { stepperY.setMaxSpeed(speed); }
 
 float MovementController::getCurrentXSpeed() { return stepperX.maxSpeed(); }
+
+bool MovementController::startContinuousMovement(bool isXAxis, bool isPositive,
+                                                 float speed,
+                                                 float acceleration)
+{
+    // Stop any existing movement first
+    stopMovement();
+
+    // Set movement parameters
+    AccelStepper& stepper = isXAxis ? stepperX : stepperY;
+    stepper.setMaxSpeed(speed);
+    stepper.setAcceleration(acceleration);
+
+    // Calculate target based on limits
+    float maxTravel = isXAxis ? MAX_X_TRAVEL_INCHES : MAX_Y_TRAVEL_INCHES;
+    long stepsPerInch = isXAxis ? X_STEPS_PER_INCH : Y_STEPS_PER_INCH;
+
+    // Set target to the limit in the requested direction
+    long targetPosition = (isPositive ? 1 : -1) * (maxTravel * stepsPerInch);
+
+    // If using absolute coordinates, add current position
+    if (isXAxis)
+    {
+        targetPosition += getCurrentXSteps();
+        enforceXLimit(targetPosition);
+    }
+    else
+    {
+        targetPosition += getCurrentYSteps();
+        enforceYLimit(targetPosition);
+    }
+
+    stepper.moveTo(targetPosition);
+
+    // Update tracking variables
+    continuousMovementActive = true;
+    continuousMovementIsX = isXAxis;
+    continuousMovementPositive = isPositive;
+
+    return true;
+}
+
+bool MovementController::startContinuousDiagonalMovement(bool xPositive,
+                                                         bool yPositive,
+                                                         float speed,
+                                                         float acceleration)
+{
+    // Stop any existing movement first
+    stopMovement();
+
+    // Set movement parameters for both axes
+    stepperX.setMaxSpeed(speed);
+    stepperY.setMaxSpeed(speed);
+    stepperX.setAcceleration(acceleration);
+    stepperY.setAcceleration(acceleration);
+
+    // Calculate target positions at the limits
+    long targetX =
+        getCurrentXSteps() +
+        ((xPositive ? 1 : -1) * MAX_X_TRAVEL_INCHES * X_STEPS_PER_INCH);
+    long targetY =
+        getCurrentYSteps() +
+        ((yPositive ? 1 : -1) * MAX_Y_TRAVEL_INCHES * Y_STEPS_PER_INCH);
+
+    // Enforce limits
+    enforceXLimit(targetX);
+    enforceYLimit(targetY);
+
+    stepperX.moveTo(targetX);
+    stepperY.moveTo(targetY);
+
+    // Update tracking variables
+    continuousDiagonalActive = true;
+    continuousDiagonalXPositive = xPositive;
+    continuousDiagonalYPositive = yPositive;
+    continuousMovementActive = false;  // Disable single-axis movement
+
+    return true;
+}
+
+void MovementController::toggleSpray(bool on)
+{
+    digitalWrite(PAINT_RELAY_PIN, on ? LOW : HIGH);
+}
+
+// Add these helper methods to enforce limits while allowing movement up to them
+void MovementController::enforceXLimit(long& targetSteps)
+{
+    float targetInches = stepsToInches(targetSteps, X_STEPS_PER_INCH);
+    if (abs(targetInches) > MAX_X_TRAVEL_INCHES)
+    {
+        // Clamp to max travel distance while preserving direction
+        targetSteps = (targetInches > 0 ? 1 : -1) *
+                      (MAX_X_TRAVEL_INCHES * X_STEPS_PER_INCH);
+    }
+}
+
+void MovementController::enforceYLimit(long& targetSteps)
+{
+    float targetInches = stepsToInches(targetSteps, Y_STEPS_PER_INCH);
+    if (abs(targetInches) > MAX_Y_TRAVEL_INCHES)
+    {
+        // Clamp to max travel distance while preserving direction
+        targetSteps = (targetInches > 0 ? 1 : -1) *
+                      (MAX_Y_TRAVEL_INCHES * Y_STEPS_PER_INCH);
+    }
+}

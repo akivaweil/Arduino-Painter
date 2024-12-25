@@ -35,6 +35,10 @@ class SerialCommandHandler
     void handleRotationCommand(const String& command);
     void sendResponse(bool success, const char* message);
     const char* getStateString(SystemState state);
+    void handleContinuousMovement(const String& command);
+    void handleManualStop();
+    void handleContinuousDiagonalMovement(const String& command);
+    void handleSprayToggle(const String& command);
 };
 
 #endif

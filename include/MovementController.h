@@ -45,6 +45,12 @@ class MovementController
 
     float getCurrentXSpeed();
 
+    bool startContinuousMovement(bool isXAxis, bool isPositive, float speed,
+                                 float acceleration);
+    bool startContinuousDiagonalMovement(bool xPositive, bool yPositive,
+                                         float speed, float acceleration);
+    void toggleSpray(bool on);
+
    private:
     AccelStepper stepperX;
     AccelStepper stepperY;
@@ -65,6 +71,18 @@ class MovementController
     void updateSprayControl(const Command& cmd);
     void configureMotors();
     void updatePositionCache() const;  // Updates cached positions
+
+    // Add member variables to track continuous movement
+    bool continuousMovementActive;
+    bool continuousMovementIsX;
+    bool continuousMovementPositive;
+
+    bool continuousDiagonalActive;
+    bool continuousDiagonalXPositive;
+    bool continuousDiagonalYPositive;
+
+    void enforceXLimit(long& targetSteps);
+    void enforceYLimit(long& targetSteps);
 };
 
 #endif

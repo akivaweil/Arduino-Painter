@@ -83,6 +83,35 @@ void SerialCommandHandler::processCommands()
         return;
     }
 
+    // Handle manual movement commands separately
+    if (command.startsWith("MANUAL_MOVE "))
+    {
+        handleContinuousMovement(command);
+        return;
+    }
+    else if (command == "MANUAL_STOP")
+    {
+        handleManualStop();
+        return;
+    }
+
+    // Handle manual movement commands separately
+    if (command.startsWith("MANUAL_MOVE_DIAGONAL "))
+    {
+        handleContinuousDiagonalMovement(command);
+        return;
+    }
+    else if (command == "SPRAY_START")
+    {
+        handleSprayToggle("START");
+        return;
+    }
+    else if (command == "SPRAY_STOP")
+    {
+        handleSprayToggle("STOP");
+        return;
+    }
+
     // Process other system commands
     handleSystemCommand(command);
 }
@@ -164,11 +193,12 @@ void SerialCommandHandler::handleManualMovement(const String& command)
 {
     // Only allow manual movement in IDLE state
     SystemState currentState = stateManager.getCurrentState();
-    if (currentState != IDLE)
+    if (currentState != IDLE && currentState != HOMED)
     {
         char buffer[64];
         snprintf(buffer, sizeof(buffer),
-                 "Can only move manually from IDLE state (current: %s)",
+                 "Can only move manually from IDLE or HOMED state (current: "
+                 "%s)",
                  getStateString(currentState));
         sendResponse(false, buffer);
         return;
@@ -646,5 +676,162 @@ const char* SerialCommandHandler::getStateString(SystemState state)
             return "BACK_WASHING";
         default:
             return "UNKNOWN";
+    }
+}
+
+// Add new method to handle continuous movement
+void SerialCommandHandler::handleContinuousMovement(const String& command)
+{
+    // Only allow manual movement in IDLE or HOMED state
+    SystemState currentState = stateManager.getCurrentState();
+    if (currentState != IDLE && currentState != HOMED)
+    {
+        char buffer[64];
+        snprintf(
+            buffer, sizeof(buffer),
+            "Can only move manually from IDLE or HOMED state (current: %s)",
+            getStateString(currentState));
+        sendResponse(false, buffer);
+        return;
+    }
+
+    // Parse command: MANUAL_MOVE <axis> <sign> <speed> <acceleration>
+    int firstSpace = command.indexOf(' ');
+    int secondSpace = command.indexOf(' ', firstSpace + 1);
+    int thirdSpace = command.indexOf(' ', secondSpace + 1);
+    int fourthSpace = command.indexOf(' ', thirdSpace + 1);
+
+    if (firstSpace == -1 || secondSpace == -1 || thirdSpace == -1 ||
+        fourthSpace == -1)
+    {
+        sendResponse(false, "Invalid manual move command format");
+        return;
+    }
+
+    String axis = command.substring(firstSpace + 1, secondSpace);
+    String sign = command.substring(secondSpace + 1, thirdSpace);
+    float speed = command.substring(thirdSpace + 1, fourthSpace).toFloat();
+    float acceleration = command.substring(fourthSpace + 1).toFloat();
+
+    // Validate parameters
+    if (axis != "X" && axis != "Y")
+    {
+        sendResponse(false, "Invalid axis specified");
+        return;
+    }
+
+    if (sign != "+" && sign != "-")
+    {
+        sendResponse(false, "Invalid direction sign");
+        return;
+    }
+
+    // Apply speed scaling (0-1 range to actual speeds)
+    float scaledSpeed = (axis == "X" ? X_SPEED : Y_SPEED) * speed;
+    float scaledAccel = (axis == "X" ? X_ACCEL : Y_ACCEL) * acceleration;
+
+    // Start continuous movement
+    if (movementController.startContinuousMovement(axis == "X", sign == "+",
+                                                   scaledSpeed, scaledAccel))
+    {
+        sendResponse(true, "Manual movement started");
+    }
+    else
+    {
+        sendResponse(false, "Failed to start manual movement");
+    }
+}
+
+void SerialCommandHandler::handleManualStop()
+{
+    movementController.stopMovement();
+    sendResponse(true, "Manual movement stopped");
+}
+
+void SerialCommandHandler::handleContinuousDiagonalMovement(
+    const String& command)
+{
+    // Only allow manual movement in IDLE or HOMED state
+    SystemState currentState = stateManager.getCurrentState();
+    if (currentState != IDLE && currentState != HOMED)
+    {
+        char buffer[64];
+        snprintf(
+            buffer, sizeof(buffer),
+            "Can only move manually from IDLE or HOMED state (current: %s)",
+            getStateString(currentState));
+        sendResponse(false, buffer);
+        return;
+    }
+
+    // Parse command: MANUAL_MOVE_DIAGONAL <X_SIGN> <Y_SIGN> <speed>
+    // <acceleration>
+    int firstSpace = command.indexOf(' ');
+    int secondSpace = command.indexOf(' ', firstSpace + 1);
+    int thirdSpace = command.indexOf(' ', secondSpace + 1);
+    int fourthSpace = command.indexOf(' ', thirdSpace + 1);
+
+    if (firstSpace == -1 || secondSpace == -1 || thirdSpace == -1 ||
+        fourthSpace == -1)
+    {
+        sendResponse(false, "Invalid diagonal move command format");
+        return;
+    }
+
+    String xDir = command.substring(firstSpace + 1, secondSpace);
+    String yDir = command.substring(secondSpace + 1, thirdSpace);
+    float speed = command.substring(thirdSpace + 1, fourthSpace).toFloat();
+    float acceleration = command.substring(fourthSpace + 1).toFloat();
+
+    // Validate parameters
+    if ((xDir != "X+" && xDir != "X-") || (yDir != "Y+" && yDir != "Y-"))
+    {
+        sendResponse(false, "Invalid direction specified");
+        return;
+    }
+
+    // Apply speed scaling (0-1 range to actual speeds)
+    float scaledSpeed = X_SPEED * speed;  // Use X_SPEED as base for both axes
+    float scaledAccel = X_ACCEL * acceleration;
+
+    // Start continuous diagonal movement
+    if (movementController.startContinuousDiagonalMovement(
+            xDir == "X+", yDir == "Y+", scaledSpeed, scaledAccel))
+    {
+        sendResponse(true, "Diagonal movement started");
+    }
+    else
+    {
+        sendResponse(false, "Failed to start diagonal movement");
+    }
+}
+
+void SerialCommandHandler::handleSprayToggle(const String& state)
+{
+    // Only allow spray toggle in IDLE or HOMED state
+    SystemState currentState = stateManager.getCurrentState();
+    if (currentState != IDLE && currentState != HOMED)
+    {
+        char buffer[64];
+        snprintf(buffer, sizeof(buffer),
+                 "Can only toggle spray from IDLE or HOMED state (current: %s)",
+                 getStateString(currentState));
+        sendResponse(false, buffer);
+        return;
+    }
+
+    if (state == "START")
+    {
+        movementController.toggleSpray(true);
+        sendResponse(true, "Spray started");
+    }
+    else if (state == "STOP")
+    {
+        movementController.toggleSpray(false);
+        sendResponse(true, "Spray stopped");
+    }
+    else
+    {
+        sendResponse(false, "Invalid spray toggle state");
     }
 }
