@@ -4,8 +4,9 @@
 
 #include "config.h"
 
-const float MAX_X_TRAVEL_INCHES = 30.0;
-const float MAX_Y_TRAVEL_INCHES = 30.0;
+const float MAX_X_TRAVEL_INCHES = 34.0;
+const float MAX_Y_TRAVEL_INCHES = 36.0;
+const float MIN_TRAVEL_INCHES = 1.0;
 
 MovementController::MovementController()
     : stepperX(AccelStepper::DRIVER, X_STEP_PIN, X_DIR_PIN),
@@ -17,7 +18,10 @@ MovementController::MovementController()
       frontSpeed(X_SPEED),
       backSpeed(X_SPEED),
       leftSpeed(X_SPEED),
-      rightSpeed(X_SPEED)
+      rightSpeed(X_SPEED),
+      xHomed(false),
+      yHomed(false),
+      lastPositionLog(0)
 {
 }
 
@@ -361,6 +365,23 @@ void MovementController::stopMovement()
     continuousDiagonalActive = false;
 }
 
+bool MovementController::isManualMovement() const
+{
+    return continuousMovementActive || continuousDiagonalActive;
+}
+
+void MovementController::logPosition()
+{
+    float xInches = stepsToInches(getCurrentXSteps(), X_STEPS_PER_INCH);
+    float yInches = stepsToInches(getCurrentYSteps(), Y_STEPS_PER_INCH);
+
+    Serial.print(F("Position - X: "));
+    Serial.print(xInches);
+    Serial.print(F(" inches, Y: "));
+    Serial.print(yInches);
+    Serial.println(F(" inches"));
+}
+
 void MovementController::update()
 {
     // Update all stepper positions
@@ -376,9 +397,27 @@ void MovementController::update()
     motorsRunning = stepperX.isRunning() || stepperY.isRunning() ||
                     stepperRotation.isRunning();
 
+    // Log position during manual movement
+    if (motorsRunning && isManualMovement())
+    {
+        unsigned long currentTime = millis();
+        if (currentTime - lastPositionLog >= POSITION_LOG_INTERVAL)
+        {
+            logPosition();
+            lastPositionLog = currentTime;
+        }
+    }
+
     // If motors just stopped running
     if (previouslyRunning && !motorsRunning)
     {
+        // Log final position if it was a manual movement
+        if (isManualMovement())
+        {
+            Serial.println(F("Movement complete. Final position:"));
+            logPosition();
+        }
+
         // Turn off spray
         digitalWrite(PAINT_RELAY_PIN, HIGH);
 
@@ -404,9 +443,37 @@ void MovementController::update()
         AccelStepper& stepper = continuousMovementIsX ? stepperX : stepperY;
         if (!stepper.isRunning())
         {
-            // If we've somehow reached the target, set a new one
-            long newTarget = continuousMovementPositive ? 999999L : -999999L;
-            stepper.moveTo(newTarget);
+            // Check if we've hit the limit
+            float currentInches =
+                continuousMovementIsX
+                    ? stepsToInches(getCurrentXSteps(), X_STEPS_PER_INCH)
+                    : stepsToInches(getCurrentYSteps(), Y_STEPS_PER_INCH);
+
+            float maxTravel = continuousMovementIsX ? MAX_X_TRAVEL_INCHES
+                                                    : MAX_Y_TRAVEL_INCHES;
+
+            // Add minimum travel check
+            if ((continuousMovementPositive && currentInches >= maxTravel) ||
+                (!continuousMovementPositive &&
+                 currentInches <= MIN_TRAVEL_INCHES))
+            {
+                // We've hit the limit, stop continuous movement and log
+                // position
+                Serial.println(
+                    F("Continuous movement reached limit. Final position:"));
+                logPosition();
+                continuousMovementActive = false;
+                return;
+            }
+
+            // Calculate target that respects both min and max limits
+            float targetInches =
+                continuousMovementPositive ? maxTravel : MIN_TRAVEL_INCHES;
+            long stepsPerInch =
+                continuousMovementIsX ? X_STEPS_PER_INCH : Y_STEPS_PER_INCH;
+            long targetSteps = targetInches * stepsPerInch;
+
+            stepper.moveTo(targetSteps);
         }
     }
 
@@ -415,11 +482,39 @@ void MovementController::update()
     {
         if (!stepperX.isRunning() || !stepperY.isRunning())
         {
-            // If either motor has reached its target, set new targets
-            long newTargetX = continuousDiagonalXPositive ? 999999L : -999999L;
-            long newTargetY = continuousDiagonalYPositive ? 999999L : -999999L;
-            stepperX.moveTo(newTargetX);
-            stepperY.moveTo(newTargetY);
+            // Check if we've hit any limits
+            float currentXInches =
+                stepsToInches(getCurrentXSteps(), X_STEPS_PER_INCH);
+            float currentYInches =
+                stepsToInches(getCurrentYSteps(), Y_STEPS_PER_INCH);
+
+            bool xAtLimit = (continuousDiagonalXPositive &&
+                             currentXInches >= MAX_X_TRAVEL_INCHES) ||
+                            (!continuousDiagonalXPositive &&
+                             currentXInches <= MIN_TRAVEL_INCHES);
+            bool yAtLimit = (continuousDiagonalYPositive &&
+                             currentYInches >= MAX_Y_TRAVEL_INCHES) ||
+                            (!continuousDiagonalYPositive &&
+                             currentYInches <= MIN_TRAVEL_INCHES);
+
+            if (xAtLimit || yAtLimit)
+            {
+                // We've hit a limit, stop diagonal movement and log position
+                Serial.println(
+                    F("Diagonal movement reached limit. Final position:"));
+                logPosition();
+                continuousDiagonalActive = false;
+                return;
+            }
+
+            // Set targets to appropriate limits
+            float targetX = continuousDiagonalXPositive ? MAX_X_TRAVEL_INCHES
+                                                        : MIN_TRAVEL_INCHES;
+            float targetY = continuousDiagonalYPositive ? MAX_Y_TRAVEL_INCHES
+                                                        : MIN_TRAVEL_INCHES;
+
+            stepperX.moveTo(targetX * X_STEPS_PER_INCH);
+            stepperY.moveTo(targetY * Y_STEPS_PER_INCH);
         }
     }
 }
@@ -449,31 +544,44 @@ bool MovementController::startContinuousMovement(bool isXAxis, bool isPositive,
     // Stop any existing movement first
     stopMovement();
 
+    // Get current position in inches
+    float currentInches =
+        isXAxis ? stepsToInches(getCurrentXSteps(), X_STEPS_PER_INCH)
+                : stepsToInches(getCurrentYSteps(), Y_STEPS_PER_INCH);
+
+    Serial.println(F("=== Starting Continuous Movement ==="));
+    Serial.print(F("Current position (inches): "));
+    Serial.println(currentInches);
+
+    // Check if we're already at the limit in the requested direction
+    float maxTravel = isXAxis ? MAX_X_TRAVEL_INCHES : MAX_Y_TRAVEL_INCHES;
+
+    if ((isPositive && currentInches >= maxTravel) ||
+        (!isPositive &&
+         currentInches <= MIN_TRAVEL_INCHES))  // Changed from <= -maxTravel
+    {
+        Serial.println(F("Already at travel limit, movement blocked"));
+        return false;
+    }
+
     // Set movement parameters
     AccelStepper& stepper = isXAxis ? stepperX : stepperY;
     stepper.setMaxSpeed(speed);
     stepper.setAcceleration(acceleration);
 
-    // Calculate target based on limits
-    float maxTravel = isXAxis ? MAX_X_TRAVEL_INCHES : MAX_Y_TRAVEL_INCHES;
+    // Calculate target that won't exceed limits
     long stepsPerInch = isXAxis ? X_STEPS_PER_INCH : Y_STEPS_PER_INCH;
+    long currentSteps = isXAxis ? getCurrentXSteps() : getCurrentYSteps();
 
-    // Set target to the limit in the requested direction
-    long targetPosition = (isPositive ? 1 : -1) * (maxTravel * stepsPerInch);
+    // Set target to the appropriate limit in the requested direction
+    float targetInches =
+        isPositive ? maxTravel : MIN_TRAVEL_INCHES;  // Changed from -maxTravel
+    long targetSteps = targetInches * stepsPerInch;
 
-    // If using absolute coordinates, add current position
-    if (isXAxis)
-    {
-        targetPosition += getCurrentXSteps();
-        enforceXLimit(targetPosition);
-    }
-    else
-    {
-        targetPosition += getCurrentYSteps();
-        enforceYLimit(targetPosition);
-    }
+    Serial.print(F("Setting target to (inches): "));
+    Serial.println(targetInches);
 
-    stepper.moveTo(targetPosition);
+    stepper.moveTo(targetSteps);
 
     // Update tracking variables
     continuousMovementActive = true;
@@ -491,26 +599,63 @@ bool MovementController::startContinuousDiagonalMovement(bool xPositive,
     // Stop any existing movement first
     stopMovement();
 
+    // Get current positions
+    float currentXInches = stepsToInches(getCurrentXSteps(), X_STEPS_PER_INCH);
+    float currentYInches = stepsToInches(getCurrentYSteps(), Y_STEPS_PER_INCH);
+
+    Serial.println(F("=== Starting Continuous Diagonal Movement ==="));
+    Serial.print(F("Current X (inches): "));
+    Serial.println(currentXInches);
+    Serial.print(F("Current Y (inches): "));
+    Serial.println(currentYInches);
+
+    // Check if either axis is already at its limit
+    if ((xPositive && currentXInches >= MAX_X_TRAVEL_INCHES) ||
+        (!xPositive && currentXInches <= MIN_TRAVEL_INCHES) ||
+        (yPositive && currentYInches >= MAX_Y_TRAVEL_INCHES) ||
+        (!yPositive && currentYInches <= MIN_TRAVEL_INCHES))
+    {
+        Serial.println(F("Already at travel limit, movement blocked"));
+        return false;
+    }
+
+    // Calculate the remaining travel distance for each axis
+    float remainingX = xPositive ? (MAX_X_TRAVEL_INCHES - currentXInches)
+                                 : (currentXInches - MIN_TRAVEL_INCHES);
+    float remainingY = yPositive ? (MAX_Y_TRAVEL_INCHES - currentYInches)
+                                 : (currentYInches - MIN_TRAVEL_INCHES);
+
+    // Calculate speed ratios to maintain true diagonal movement
+    float totalStepsX = remainingX * X_STEPS_PER_INCH;
+    float totalStepsY = remainingY * Y_STEPS_PER_INCH;
+
+    // Adjust speeds proportionally based on the number of steps each motor
+    // needs to move
+    float speedRatio = totalStepsX / totalStepsY;
+    float xSpeed = speedRatio >= 1.0 ? speed : speed * speedRatio;
+    float ySpeed = speedRatio >= 1.0 ? speed / speedRatio : speed;
+
     // Set movement parameters for both axes
-    stepperX.setMaxSpeed(speed);
-    stepperY.setMaxSpeed(speed);
+    stepperX.setMaxSpeed(xSpeed);
+    stepperY.setMaxSpeed(ySpeed);
     stepperX.setAcceleration(acceleration);
     stepperY.setAcceleration(acceleration);
 
-    // Calculate target positions at the limits
-    long targetX =
-        getCurrentXSteps() +
-        ((xPositive ? 1 : -1) * MAX_X_TRAVEL_INCHES * X_STEPS_PER_INCH);
-    long targetY =
-        getCurrentYSteps() +
-        ((yPositive ? 1 : -1) * MAX_Y_TRAVEL_INCHES * Y_STEPS_PER_INCH);
+    // Set targets to appropriate limits
+    float targetX = xPositive ? MAX_X_TRAVEL_INCHES : MIN_TRAVEL_INCHES;
+    float targetY = yPositive ? MAX_Y_TRAVEL_INCHES : MIN_TRAVEL_INCHES;
 
-    // Enforce limits
-    enforceXLimit(targetX);
-    enforceYLimit(targetY);
+    Serial.print(F("Target X (inches): "));
+    Serial.println(targetX);
+    Serial.print(F("Target Y (inches): "));
+    Serial.println(targetY);
+    Serial.print(F("X Speed: "));
+    Serial.println(xSpeed);
+    Serial.print(F("Y Speed: "));
+    Serial.println(ySpeed);
 
-    stepperX.moveTo(targetX);
-    stepperY.moveTo(targetY);
+    stepperX.moveTo(targetX * X_STEPS_PER_INCH);
+    stepperY.moveTo(targetY * Y_STEPS_PER_INCH);
 
     // Update tracking variables
     continuousDiagonalActive = true;
@@ -529,22 +674,91 @@ void MovementController::toggleSpray(bool on)
 // Add these helper methods to enforce limits while allowing movement up to them
 void MovementController::enforceXLimit(long& targetSteps)
 {
-    float targetInches = stepsToInches(targetSteps, X_STEPS_PER_INCH);
-    if (abs(targetInches) > MAX_X_TRAVEL_INCHES)
+    // During homing or if not yet homed, don't enforce lower limit
+    if (!xHomed ||
+        (stateManager && (stateManager->getCurrentState() == HOMING_X ||
+                          stateManager->getCurrentState() == HOMING_Y ||
+                          stateManager->getCurrentState() == HOMING_ROTATION)))
     {
-        // Clamp to max travel distance while preserving direction
-        targetSteps = (targetInches > 0 ? 1 : -1) *
-                      (MAX_X_TRAVEL_INCHES * X_STEPS_PER_INCH);
+        // Only enforce upper limit
+        float currentInches =
+            stepsToInches(getCurrentXSteps(), X_STEPS_PER_INCH);
+        float targetInches = stepsToInches(targetSteps, X_STEPS_PER_INCH);
+        float relativeMovement = targetInches - currentInches;
+
+        if (relativeMovement > MAX_X_TRAVEL_INCHES)
+        {
+            float clampedRelative = MAX_X_TRAVEL_INCHES;
+            targetSteps =
+                getCurrentXSteps() + (clampedRelative * X_STEPS_PER_INCH);
+        }
+        return;
+    }
+
+    // Normal operation with both limits
+    float currentInches = stepsToInches(getCurrentXSteps(), X_STEPS_PER_INCH);
+    float targetInches = stepsToInches(targetSteps, X_STEPS_PER_INCH);
+    float relativeMovement = targetInches - currentInches;
+
+    if (relativeMovement <
+        (MIN_TRAVEL_INCHES - currentInches))  // Would move below minimum
+    {
+        targetSteps = MIN_TRAVEL_INCHES * X_STEPS_PER_INCH;  // Clamp at minimum
+    }
+    else if (relativeMovement >
+             (MAX_X_TRAVEL_INCHES - currentInches))  // Would exceed max
+    {
+        targetSteps = MAX_X_TRAVEL_INCHES * X_STEPS_PER_INCH;
     }
 }
 
 void MovementController::enforceYLimit(long& targetSteps)
 {
-    float targetInches = stepsToInches(targetSteps, Y_STEPS_PER_INCH);
-    if (abs(targetInches) > MAX_Y_TRAVEL_INCHES)
+    // During homing or if not yet homed, don't enforce lower limit
+    if (!yHomed ||
+        (stateManager && (stateManager->getCurrentState() == HOMING_X ||
+                          stateManager->getCurrentState() == HOMING_Y ||
+                          stateManager->getCurrentState() == HOMING_ROTATION)))
     {
-        // Clamp to max travel distance while preserving direction
-        targetSteps = (targetInches > 0 ? 1 : -1) *
-                      (MAX_Y_TRAVEL_INCHES * Y_STEPS_PER_INCH);
+        // Only enforce upper limit
+        float currentInches =
+            stepsToInches(getCurrentYSteps(), Y_STEPS_PER_INCH);
+        float targetInches = stepsToInches(targetSteps, Y_STEPS_PER_INCH);
+        float relativeMovement = targetInches - currentInches;
+
+        if (relativeMovement > MAX_Y_TRAVEL_INCHES)
+        {
+            float clampedRelative = MAX_Y_TRAVEL_INCHES;
+            targetSteps =
+                getCurrentYSteps() + (clampedRelative * Y_STEPS_PER_INCH);
+        }
+        return;
     }
+
+    // Normal operation with both limits
+    float currentInches = stepsToInches(getCurrentYSteps(), Y_STEPS_PER_INCH);
+    float targetInches = stepsToInches(targetSteps, Y_STEPS_PER_INCH);
+    float relativeMovement = targetInches - currentInches;
+
+    if (relativeMovement <
+        (MIN_TRAVEL_INCHES - currentInches))  // Would move below minimum
+    {
+        targetSteps = MIN_TRAVEL_INCHES * Y_STEPS_PER_INCH;  // Clamp at minimum
+    }
+    else if (relativeMovement >
+             (MAX_Y_TRAVEL_INCHES - currentInches))  // Would exceed max
+    {
+        targetSteps = MAX_Y_TRAVEL_INCHES * Y_STEPS_PER_INCH;
+    }
+}
+
+bool MovementController::isPositionValid(long xSteps, long ySteps) const
+{
+    // Add your machine's specific limits here
+    // Example:
+    const long MAX_X_STEPS = 40 * X_STEPS_PER_INCH;  // 40 inches
+    const long MAX_Y_STEPS = 40 * Y_STEPS_PER_INCH;  // 40 inches
+
+    return (xSteps >= 0 && xSteps <= MAX_X_STEPS && ySteps >= 0 &&
+            ySteps <= MAX_Y_STEPS);
 }

@@ -51,6 +51,15 @@ class MovementController
                                          float speed, float acceleration);
     void toggleSpray(bool on);
 
+    void setXHomed(bool homed) { xHomed = homed; }
+    void setYHomed(bool homed) { yHomed = homed; }
+    bool isXHomed() const { return xHomed; }
+    bool isYHomed() const { return yHomed; }
+
+    void logPosition();
+
+    bool isPositionValid(long xSteps, long ySteps) const;
+
    private:
     AccelStepper stepperX;
     AccelStepper stepperY;
@@ -61,6 +70,9 @@ class MovementController
     float backSpeed;
     float leftSpeed;
     float rightSpeed;
+
+    bool xHomed;
+    bool yHomed;
 
     // Cache current positions to avoid const issues
     mutable long lastXPos;
@@ -83,6 +95,10 @@ class MovementController
 
     void enforceXLimit(long& targetSteps);
     void enforceYLimit(long& targetSteps);
+
+    unsigned long lastPositionLog;
+    const unsigned long POSITION_LOG_INTERVAL = 300;  // 300ms between logs
+    bool isManualMovement() const;
 };
 
 #endif

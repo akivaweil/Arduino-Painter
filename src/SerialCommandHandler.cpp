@@ -35,6 +35,7 @@ void SerialCommandHandler::setup()
     Serial.println(F("  MOVE_Y <dist> - Relative Y movement"));
     Serial.println(F("  GOTO_X <pos> - Absolute X movement"));
     Serial.println(F("  GOTO_Y <pos> - Absolute Y movement"));
+    Serial.println(F("  GOTO <x> <y> - Absolute X Y movement"));
     Serial.println(F("  SPEED <side> <value> - Set speed for side (0-100)"));
     Serial.println(F("  ROTATE <degrees> - Rotate specified degrees (+ or -)"));
     Serial.println(F("  PRESSURE   - Toggle pressure pot on/off"));
@@ -63,7 +64,8 @@ void SerialCommandHandler::processCommands()
     command.toUpperCase();
 
     // Handle movement commands separately
-    if (command.startsWith("MOVE_") || command.startsWith("GOTO_"))
+    if (command.startsWith("MOVE_") || command.startsWith("GOTO_") ||
+        command.startsWith("GOTO"))  // Changed to catch both "GOTO" and "GOTO "
     {
         handleManualMovement(command);
         return;
@@ -196,12 +198,94 @@ void SerialCommandHandler::handleManualMovement(const String& command)
     if (currentState != IDLE && currentState != HOMED)
     {
         char buffer[64];
-        snprintf(buffer, sizeof(buffer),
-                 "Can only move manually from IDLE or HOMED state (current: "
-                 "%s)",
-                 getStateString(currentState));
+        snprintf(
+            buffer, sizeof(buffer),
+            "Can only move manually from IDLE or HOMED state (current: %s)",
+            getStateString(currentState));
         sendResponse(false, buffer);
         return;
+    }
+
+    // Handle combined GOTO command
+    if (command.startsWith("GOTO"))  // Changed to catch both "GOTO" and "GOTO "
+    {
+        if (command == "GOTO")  // Handle case with no parameters
+        {
+            sendResponse(false,
+                         "Invalid GOTO command format. Use: GOTO <x> <y>");
+            return;
+        }
+
+        // Parse two numbers after GOTO
+        int firstSpace = command.indexOf(' ');
+        int secondSpace = command.indexOf(' ', firstSpace + 1);
+
+        // Debug logging
+        Serial.println(F("=== GOTO Command Debug ==="));
+        Serial.print(F("Raw command: '"));
+        Serial.print(command);
+        Serial.println(F("'"));
+        Serial.print(F("First space at: "));
+        Serial.println(firstSpace);
+        Serial.print(F("Second space at: "));
+        Serial.println(secondSpace);
+
+        if (firstSpace == -1 || secondSpace == -1)
+        {
+            sendResponse(false,
+                         "Invalid GOTO command format. Use: GOTO <x> <y>");
+            return;
+        }
+
+        float xPos = command.substring(firstSpace + 1, secondSpace).toFloat();
+        float yPos = command.substring(secondSpace + 1).toFloat();
+
+        // Debug values
+        Serial.print(F("Parsed X: "));
+        Serial.println(xPos);
+        Serial.print(F("Parsed Y: "));
+        Serial.println(yPos);
+
+        // Validate coordinates are within machine limits
+        if (xPos < 0 || yPos < 0)
+        {
+            sendResponse(false, "Position values must be positive");
+            return;
+        }
+
+        // Convert to steps for validation
+        long xSteps = xPos * X_STEPS_PER_INCH;
+        long ySteps = yPos * Y_STEPS_PER_INCH;
+
+        // Validate against machine limits
+        if (!movementController.isPositionValid(xSteps, ySteps))
+        {
+            sendResponse(false, "Position exceeds machine limits");
+            return;
+        }
+
+        // Echo received command
+        Serial.print(F("Manual movement: GOTO X="));
+        Serial.print(xPos);
+        Serial.print(F(" Y="));
+        Serial.println(yPos);
+
+        // Create and execute movement commands
+        Command xMove('M', xPos, false);
+        Command yMove('N', yPos, false);
+
+        // Execute Y movement first to avoid potential collisions
+        if (movementController.executeCommand(yMove))
+        {
+            if (movementController.executeCommand(xMove))
+            {
+                sendResponse(true, "Moving to position");
+                return;
+            }
+        }
+
+        sendResponse(false, "Failed to initiate movement");
+        return;  // Make sure we return here
     }
 
     // Split command into parts

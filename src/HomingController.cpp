@@ -67,12 +67,16 @@ void HomingController::update()
 
 void HomingController::processXHoming()
 {
-    if (xHomeSensor
-            .read())  // Changed from xHomeSensor.read() to !xHomeSensor.read()
+    if (xHomeSensor.read())
     {
         movementController.stopMovement();
         movementController.setXPosition(0);
-        movementController.setXSpeed(X_SPEED);  // Restore normal speed
+        movementController.setXSpeed(X_SPEED);
+        movementController.setXHomed(true);  // Set X axis as homed
+
+        // Log position after homing X
+        Serial.println(F("X-axis homed. Current position:"));
+        movementController.logPosition();
 
         Serial.println(F("X-axis home position found"));
         currentAxis = 1;  // Move to Y-axis homing
@@ -92,12 +96,16 @@ void HomingController::processXHoming()
 
 void HomingController::processYHoming()
 {
-    if (yHomeSensor
-            .read())  // Changed from yHomeSensor.read() to !yHomeSensor.read()
+    if (yHomeSensor.read())
     {
         movementController.stopMovement();
         movementController.setYPosition(0);
         movementController.setYSpeed(Y_SPEED);
+        movementController.setYHomed(true);  // Set Y axis as homed
+
+        // Log position after homing Y
+        Serial.println(F("Y-axis homed. Current position:"));
+        movementController.logPosition();
 
         Serial.println(F("Y-axis home position found"));
         currentAxis = 2;  // Move to rotation homing
@@ -162,6 +170,8 @@ void HomingController::processRotationHoming()
                 {
                     Serial.println(
                         F("Already at home position, transitioning to HOMED"));
+                    Serial.println(F("Homing complete. Final position:"));
+                    movementController.logPosition();
                     stateManager->setState(HOMED);
                 }
             }
@@ -190,6 +200,8 @@ void HomingController::processRotationHoming()
             if (stateManager)
             {
                 Serial.println(F("Attempting to set HOMED state"));
+                Serial.println(F("Homing complete. Final position:"));
+                movementController.logPosition();
                 stateManager->setState(HOMED);
                 Serial.print(F("New state: "));
                 Serial.println(stateManager->getCurrentState());
@@ -204,6 +216,10 @@ void HomingController::startHoming()
     {
         // Turn off spray gun when starting homing
         digitalWrite(PAINT_RELAY_PIN, HIGH);
+
+        // Reset homed status when starting new homing sequence
+        movementController.setXHomed(false);
+        movementController.setYHomed(false);
 
         homing = true;
         homeComplete = false;
