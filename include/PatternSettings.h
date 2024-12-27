@@ -9,6 +9,7 @@ struct PatternSettings
         {
             float x;
             float y;
+            float angle;
         } front, right, back, left;
     } initialOffsets;
 
@@ -33,18 +34,22 @@ struct PatternSettings
         // Front offsets
         initialOffsets.front.x = 3.5 + 0.75;
         initialOffsets.front.y = 0 + 2.25;
+        initialOffsets.front.angle = 90;
 
         // Right offsets
         initialOffsets.right.x = 1.5;
         initialOffsets.right.y = 26.49 + 2.25;
+        initialOffsets.right.angle = 90;
 
         // Back offsets
         initialOffsets.back.x = 3.5 + 0.75;
         initialOffsets.back.y = 29.12 + 2.25;
+        initialOffsets.back.angle = 90;
 
         // Left offsets
         initialOffsets.left.x = 1.5;
         initialOffsets.left.y = 3.5 + 2.75;
+        initialOffsets.left.angle = 90;
 
         // Travel distances
         travelDistance.horizontal.x = 26.49;

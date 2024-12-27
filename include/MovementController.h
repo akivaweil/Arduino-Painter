@@ -4,6 +4,7 @@
 #include <AccelStepper.h>
 
 #include "Command.h"
+#include "ServoController.h"
 #include "StateManager.h"
 
 class MovementController
@@ -60,6 +61,8 @@ class MovementController
 
     bool isPositionValid(long xSteps, long ySteps) const;
 
+    void setServoController(ServoController* servo) { servoController = servo; }
+
    private:
     AccelStepper stepperX;
     AccelStepper stepperY;
@@ -99,6 +102,8 @@ class MovementController
     unsigned long lastPositionLog;
     const unsigned long POSITION_LOG_INTERVAL = 300;  // 300ms between logs
     bool isManualMovement() const;
+
+    ServoController* servoController;
 };
 
 #endif

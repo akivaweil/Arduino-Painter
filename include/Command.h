@@ -8,8 +8,10 @@ class Command
                    // 'X' - X move
                    // 'Y' - Y move
                    // 'R' - rotate
-                   // 'S' - spray
-                   // 'P' - prime gun
+                   // 'S' - servo angle
+                   // 'P' - spray control
+                   // 'M' - absolute X move
+                   // 'N' - absolute Y move
                    // 'C' - clean gun
                    // 'Q' - quick calibrate
                    // 'F' - paint front
@@ -39,8 +41,8 @@ class Command
 #define MOVETO_X(pos, spray) Command('M', pos, spray)
 #define MOVETO_Y(pos, spray) Command('N', pos, spray)
 #define ROTATE(deg) Command('R', deg, false)
-#define SPRAY_ON() Command('S', 0, true)
-#define SPRAY_OFF() Command('S', 0, false)
+#define SPRAY_ON() Command('P', 0, true)
+#define SPRAY_OFF() Command('P', 0, false)
 
 // Maintenance command macros
 #define PRIME_GUN() Command('P', 0, true)

@@ -441,8 +441,8 @@ Command* PatternExecutor::generatePattern(int side) const
     Serial.println(side);
 
     // Get side-specific settings
-    float xOffset, yOffset;
-    float xTravel, yTravel;
+    float xOffset = 0, yOffset = 0, angle = 0;
+    float xTravel = 0, yTravel = 0;
 
     switch (side)
     {
@@ -450,6 +450,7 @@ Command* PatternExecutor::generatePattern(int side) const
             Serial.println(F("Generating FRONT pattern"));
             xOffset = settings.initialOffsets.front.x;
             yOffset = settings.initialOffsets.front.y;
+            angle = settings.initialOffsets.front.angle;
             xTravel = settings.travelDistance.vertical.x;
             yTravel = settings.travelDistance.vertical.y;
             break;
@@ -457,6 +458,7 @@ Command* PatternExecutor::generatePattern(int side) const
             Serial.println(F("Generating BACK pattern"));
             xOffset = settings.initialOffsets.back.x;
             yOffset = settings.initialOffsets.back.y;
+            angle = settings.initialOffsets.back.angle;
             xTravel = settings.travelDistance.vertical.x;
             yTravel = settings.travelDistance.vertical.y;
             break;
@@ -464,6 +466,7 @@ Command* PatternExecutor::generatePattern(int side) const
             Serial.println(F("Generating LEFT pattern"));
             xOffset = settings.initialOffsets.left.x;
             yOffset = settings.initialOffsets.left.y;
+            angle = settings.initialOffsets.left.angle;
             xTravel = settings.travelDistance.horizontal.x;
             yTravel = settings.travelDistance.horizontal.y;
             break;
@@ -471,6 +474,7 @@ Command* PatternExecutor::generatePattern(int side) const
             Serial.println(F("Generating RIGHT pattern"));
             xOffset = settings.initialOffsets.right.x;
             yOffset = settings.initialOffsets.right.y;
+            angle = settings.initialOffsets.right.angle;
             xTravel = settings.travelDistance.horizontal.x;
             yTravel = settings.travelDistance.horizontal.y;
             break;
@@ -486,9 +490,14 @@ Command* PatternExecutor::generatePattern(int side) const
     Serial.print(F(" Y Travel: "));
     Serial.println(yTravel);
 
-    int size = calculatePatternSize(side);
+    int size = calculatePatternSize(side) + 1;  // Add 1 for servo command
     Command* pattern = new Command[size];
     int idx = 0;
+
+    // Add servo command at the start
+    Serial.print(F("Adding servo command with angle: "));
+    Serial.println(angle);
+    pattern[idx++] = Command('S', angle, false);  // 'S' for servo
 
     // Initial positioning
     pattern[idx++] = MOVETO_X(xOffset, false);
@@ -532,9 +541,9 @@ Command* PatternExecutor::generatePattern(int side) const
 int PatternExecutor::calculatePatternSize(int side) const
 {
     int numRows = (side == 2 || side == 3) ? settings.rows.x : settings.rows.y;
-    // Size = initial moves (2) + per row (spray on + move + spray off + move to
-    // next row) * rows
-    return 2 + (numRows * 4) -
+    // Size = servo command (1) + initial moves (2) + per row (spray on + move +
+    // spray off + move to next row) * rows
+    return 3 + (numRows * 4) -
            1;  // -1 because last row doesn't need vertical move
 }
 

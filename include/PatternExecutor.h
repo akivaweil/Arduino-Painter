@@ -6,6 +6,21 @@
 #include "MovementController.h"
 #include "PatternSettings.h"
 
+struct Offset
+{
+    float x;
+    float y;
+    float angle;
+};
+
+struct InitialOffsets
+{
+    Offset front;
+    Offset back;
+    Offset left;
+    Offset right;
+};
+
 class PatternExecutor
 {
    public:
@@ -25,28 +40,32 @@ class PatternExecutor
     void setStateManager(StateManager* manager) { stateManager = manager; }
 
     // Pattern configuration methods
-    void setFrontOffsets(float x, float y)
+    void setFrontOffsets(float x, float y, float angle)
     {
         settings.initialOffsets.front.x = x;
         settings.initialOffsets.front.y = y;
+        settings.initialOffsets.front.angle = angle;
     }
 
-    void setBackOffsets(float x, float y)
+    void setBackOffsets(float x, float y, float angle)
     {
         settings.initialOffsets.back.x = x;
         settings.initialOffsets.back.y = y;
+        settings.initialOffsets.back.angle = angle;
     }
 
-    void setLeftOffsets(float x, float y)
+    void setLeftOffsets(float x, float y, float angle)
     {
         settings.initialOffsets.left.x = x;
         settings.initialOffsets.left.y = y;
+        settings.initialOffsets.left.angle = angle;
     }
 
-    void setRightOffsets(float x, float y)
+    void setRightOffsets(float x, float y, float angle)
     {
         settings.initialOffsets.right.x = x;
         settings.initialOffsets.right.y = y;
+        settings.initialOffsets.right.angle = angle;
     }
 
     void setGrid(int x, int y)

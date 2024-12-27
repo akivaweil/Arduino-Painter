@@ -22,6 +22,12 @@ void ServoController::setup()
 
 bool ServoController::setAngle(int angle)
 {
+    Serial.println(F("=== Servo Movement Debug ==="));
+    Serial.print(F("Current angle: "));
+    Serial.println(currentAngle);
+    Serial.print(F("Requested angle: "));
+    Serial.println(angle);
+
     if (!isAngleValid(angle))
     {
         Serial.print(F("Invalid angle: "));
@@ -31,6 +37,7 @@ bool ServoController::setAngle(int angle)
 
     currentAngle = angle;
     servo.write(angle);
+    Serial.println(F("Servo angle updated successfully"));
     delay(15);  // Allow servo to move
 
     return true;

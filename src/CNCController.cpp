@@ -18,6 +18,9 @@ CNCController::CNCController()
     maintenanceController.setStateManager(&stateManager);
     maintenanceController.setHomingController(&homingController);
     patternExecutor.setStateManager(&stateManager);
+
+    // Add servo controller to movement controller
+    movementController.setServoController(&servoController);
 }
 
 void CNCController::setup()

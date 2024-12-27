@@ -237,19 +237,14 @@ float MovementController::stepsToAngle(long steps) const
 
 bool MovementController::executeCommand(const Command& cmd)
 {
-    // // Add rotation command debug logging
-    // if (cmd.type == 'R')
-    // {
-    //     Serial.println(F("=== Rotation Command Debug ==="));
-    //     Serial.print(F("Current steps: "));
-    //     Serial.println(getCurrentRotationSteps());
-    //     Serial.print(F("Target value: "));
-    //     Serial.println(cmd.value);
-    //     Serial.print(F("Absolute mode: "));
-    //     Serial.println(cmd.sprayOn ? "true" : "false");
-    // }
-
     updateSprayControl(cmd);
+
+    // If it's a spray-only command, return true since updateSprayControl
+    // handled it
+    if (cmd.type == 'P')
+    {
+        return true;
+    }
 
     long targetSteps = 0;
     float targetPosition = 0.0;
@@ -299,9 +294,16 @@ bool MovementController::executeCommand(const Command& cmd)
             break;
         }
 
-        case 'S':  // Spray control only
-            // Already handled by updateSprayControl
-            break;
+        case 'S':  // Servo angle command
+            if (servoController != nullptr)
+            {
+                Serial.println(F("=== Servo Command Debug ==="));
+                Serial.print(F("Setting servo angle to: "));
+                Serial.println(static_cast<int>(cmd.value));
+                return servoController->setAngle(static_cast<int>(cmd.value));
+            }
+            Serial.println(F("ERROR: ServoController not initialized"));
+            return false;
 
         default:
             Serial.println(F("ERROR: Invalid movement command type"));
@@ -313,7 +315,7 @@ bool MovementController::executeCommand(const Command& cmd)
 
 void MovementController::updateSprayControl(const Command& cmd)
 {
-    if (cmd.type == 'S')
+    if (cmd.type == 'P')  // Change to 'P' for Paint/spray control
     {
         digitalWrite(PAINT_RELAY_PIN, cmd.sprayOn ? LOW : HIGH);
     }

@@ -638,34 +638,36 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
     }
     else if (command.startsWith("SET_OFFSET "))
     {
-        // Format: SET_OFFSET <side> <x> <y>
+        // Format: SET_OFFSET <side> <x> <y> <angle>
         int firstSpace = command.indexOf(' ', 11);
         int secondSpace = command.indexOf(' ', firstSpace + 1);
+        int thirdSpace = command.indexOf(' ', secondSpace + 1);
 
-        if (firstSpace != -1 && secondSpace != -1)
+        if (firstSpace != -1 && secondSpace != -1 && thirdSpace != -1)
         {
             String side = command.substring(11, firstSpace);
             float x = command.substring(firstSpace + 1, secondSpace).toFloat();
-            float y = command.substring(secondSpace + 1).toFloat();
+            float y = command.substring(secondSpace + 1, thirdSpace).toFloat();
+            float angle = command.substring(thirdSpace + 1).toFloat();
 
             if (side == "FRONT")
             {
-                patternExecutor.setFrontOffsets(x, y);
+                patternExecutor.setFrontOffsets(x, y, angle);
                 responseMsg = "Front offsets updated";
             }
             else if (side == "BACK")
             {
-                patternExecutor.setBackOffsets(x, y);
+                patternExecutor.setBackOffsets(x, y, angle);
                 responseMsg = "Back offsets updated";
             }
             else if (side == "LEFT")
             {
-                patternExecutor.setLeftOffsets(x, y);
+                patternExecutor.setLeftOffsets(x, y, angle);
                 responseMsg = "Left offsets updated";
             }
             else if (side == "RIGHT")
             {
-                patternExecutor.setRightOffsets(x, y);
+                patternExecutor.setRightOffsets(x, y, angle);
                 responseMsg = "Right offsets updated";
             }
             else
@@ -673,6 +675,11 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
                 validCommand = false;
                 responseMsg = "Invalid side specified";
             }
+        }
+        else
+        {
+            validCommand = false;
+            responseMsg = "Invalid SET_OFFSET command format";
         }
     }
     else if (command == "BACK_WASH")
