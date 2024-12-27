@@ -217,6 +217,12 @@ void HomingController::startHoming()
         // Turn off spray gun when starting homing
         digitalWrite(PAINT_RELAY_PIN, HIGH);
 
+        // Reset servo to default position
+        if (servoController)
+        {
+            servoController->setAngle(SERVO_DEFAULT_ANGLE);
+        }
+
         // Reset homed status when starting new homing sequence
         movementController.setXHomed(false);
         movementController.setYHomed(false);

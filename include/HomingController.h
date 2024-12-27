@@ -5,6 +5,7 @@
 #include <Bounce2.h>
 
 #include "MovementController.h"
+#include "ServoController.h"
 #include "StateManager.h"
 
 class HomingController
@@ -17,11 +18,13 @@ class HomingController
     bool isHomed() const;
     void startHoming();
     void setStateManager(StateManager* manager);
+    void setServoController(ServoController* servo) { servoController = servo; }
     long getHomeRotationPosition() const;
 
    private:
     MovementController& movementController;
     StateManager* stateManager;
+    ServoController* servoController;
     Bounce xHomeSensor;
     Bounce yHomeSensor;
 

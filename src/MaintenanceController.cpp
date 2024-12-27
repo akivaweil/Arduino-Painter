@@ -150,8 +150,10 @@ void MaintenanceController::executePrimeSequence()
     {                                   // Move to prime position (x=0, y=15)
         Command moveX('M', 0, false);   // Move to X=0
         Command moveY('N', 15, false);  // Move to Y=15
+        Command servoCmd('S', 135, false);  // Set servo to 135 degrees
         movementController.executeCommand(moveX);
         movementController.executeCommand(moveY);
+        movementController.executeCommand(servoCmd);
         stepTimer = millis();
         primeStep = 1;
     }
@@ -159,7 +161,8 @@ void MaintenanceController::executePrimeSequence()
     {  // Wait for movement to complete
         if (!movementController.isMoving() && (millis() - stepTimer >= 1000))
         {
-            Command sprayCmd('S', 0, true);
+            Command sprayCmd(
+                'P', 0, true);  // Changed from 'S' to 'P' to control spray only
             movementController.executeCommand(sprayCmd);
             stepTimer = millis();
             primeStep = 2;
@@ -169,7 +172,9 @@ void MaintenanceController::executePrimeSequence()
     {  // Prime for configured duration
         if (millis() - stepTimer >= primeDurationMs)
         {
-            Command stopCmd('S', 0, false);
+            Command stopCmd(
+                'P', 0,
+                false);  // Changed from 'S' to 'P' to control spray only
             movementController.executeCommand(stopCmd);
             primeStep = 0;
             maintenanceStep = 0;  // Complete maintenance
@@ -190,10 +195,12 @@ void MaintenanceController::executeCleanSequence()
 
     if (cleanStep == 0)
     {
-        Command moveX('M', 0, false);   // Move to X=0
-        Command moveY('N', 20, false);  // Move to Y=20
+        Command moveX('M', 0, false);       // Move to X=0
+        Command moveY('N', 20, false);      // Move to Y=20
+        Command servoCmd('S', 135, false);  // Set servo to 135 degrees
         movementController.executeCommand(moveX);
         movementController.executeCommand(moveY);
+        movementController.executeCommand(servoCmd);
         stepTimer = millis();
         cleanStep = 1;
     }
@@ -232,6 +239,11 @@ void MaintenanceController::startBackWash()
     maintenanceStep = 3;
     stepTimer = millis();
     digitalWrite(BACK_WASH_RELAY_PIN, LOW);
+
+    // Add servo command for back wash
+    Command servoCmd('S', 135, false);
+    movementController.executeCommand(servoCmd);
+
     Serial.println(F("Starting back wash sequence"));
 }
 

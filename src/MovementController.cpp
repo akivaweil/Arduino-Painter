@@ -445,14 +445,17 @@ void MovementController::update()
             logPosition();
         }
 
-        // Turn off spray
-        digitalWrite(PAINT_RELAY_PIN, HIGH);
+        // Turn off spray only if not in maintenance mode
+        if (stateManager && stateManager->getCurrentState() != PRIMING &&
+            stateManager->getCurrentState() != CLEANING &&
+            stateManager->getCurrentState() != BACK_WASHING)
+        {
+            digitalWrite(PAINT_RELAY_PIN, HIGH);
+        }
 
-        // If we were in manual rotation mode, transition back to appropriate
-        // state
+        // Handle state transitions for manual rotation
         if (stateManager && stateManager->getCurrentState() == MANUAL_ROTATING)
         {
-            // Return to previous state (IDLE or HOMED)
             if (stateManager->getPreviousState() == HOMED)
             {
                 stateManager->setState(HOMED);
