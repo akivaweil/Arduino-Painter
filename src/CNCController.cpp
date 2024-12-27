@@ -8,8 +8,9 @@ CNCController::CNCController()
       homingController(movementController),
       patternExecutor(movementController, homingController),
       maintenanceController(movementController),
+      servoController(),
       serialHandler(stateManager, movementController, homingController,
-                    patternExecutor, maintenanceController)
+                    patternExecutor, maintenanceController, servoController)
 {
     // Inject StateManager into controllers
     movementController.setStateManager(&stateManager);
@@ -27,6 +28,7 @@ void CNCController::setup()
     movementController.setup();
     homingController.setup();
     serialHandler.setup();
+    servoController.setup();
 
     // Configure pins
     pinMode(PAINT_RELAY_PIN, OUTPUT);
@@ -65,4 +67,6 @@ void CNCController::loop()
 
     // Handle any incoming serial commands
     serialHandler.processCommands();
+
+    servoController.update();
 }

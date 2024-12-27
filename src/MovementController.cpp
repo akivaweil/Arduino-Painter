@@ -392,6 +392,31 @@ void MovementController::update()
     // Update position cache
     updatePositionCache();
 
+    // Check for limit clears during any movement
+    float currentXInches = stepsToInches(getCurrentXSteps(), X_STEPS_PER_INCH);
+    float currentYInches = stepsToInches(getCurrentYSteps(), Y_STEPS_PER_INCH);
+
+    static bool xWasAtLimit = false;
+    static bool yWasAtLimit = false;
+
+    // Check X axis limit clear
+    bool xAtLimit = (currentXInches <= MIN_TRAVEL_INCHES ||
+                     currentXInches >= MAX_X_TRAVEL_INCHES);
+    if (xWasAtLimit && !xAtLimit)
+    {
+        Serial.println(F("LIMIT_CLEAR:X"));
+    }
+    xWasAtLimit = xAtLimit;
+
+    // Check Y axis limit clear
+    bool yAtLimit = (currentYInches <= MIN_TRAVEL_INCHES ||
+                     currentYInches >= MAX_Y_TRAVEL_INCHES);
+    if (yWasAtLimit && !yAtLimit)
+    {
+        Serial.println(F("LIMIT_CLEAR:Y"));
+    }
+    yWasAtLimit = yAtLimit;
+
     // Update motors running status
     bool previouslyRunning = motorsRunning;
     motorsRunning = stepperX.isRunning() || stepperY.isRunning() ||
@@ -453,12 +478,23 @@ void MovementController::update()
                                                     : MAX_Y_TRAVEL_INCHES;
 
             // Add minimum travel check
-            if ((continuousMovementPositive && currentInches >= maxTravel) ||
-                (!continuousMovementPositive &&
-                 currentInches <= MIN_TRAVEL_INCHES))
+            if (continuousMovementPositive && currentInches >= maxTravel)
             {
-                // We've hit the limit, stop continuous movement and log
-                // position
+                // Log limit reached before position
+                Serial.println(continuousMovementIsX ? F("LIMIT:X_MAX")
+                                                     : F("LIMIT:Y_MAX"));
+                Serial.println(
+                    F("Continuous movement reached limit. Final position:"));
+                logPosition();
+                continuousMovementActive = false;
+                return;
+            }
+            else if (!continuousMovementPositive &&
+                     currentInches <= MIN_TRAVEL_INCHES)
+            {
+                // Log limit reached before position
+                Serial.println(continuousMovementIsX ? F("LIMIT:X_MIN")
+                                                     : F("LIMIT:Y_MIN"));
                 Serial.println(
                     F("Continuous movement reached limit. Final position:"));
                 logPosition();
@@ -488,6 +524,18 @@ void MovementController::update()
             float currentYInches =
                 stepsToInches(getCurrentYSteps(), Y_STEPS_PER_INCH);
 
+            // Clear limit flags if we've moved away from limits
+            if (currentXInches > MIN_TRAVEL_INCHES &&
+                currentXInches < MAX_X_TRAVEL_INCHES)
+            {
+                Serial.println(F("LIMIT_CLEAR:X"));
+            }
+            if (currentYInches > MIN_TRAVEL_INCHES &&
+                currentYInches < MAX_Y_TRAVEL_INCHES)
+            {
+                Serial.println(F("LIMIT_CLEAR:Y"));
+            }
+
             bool xAtLimit = (continuousDiagonalXPositive &&
                              currentXInches >= MAX_X_TRAVEL_INCHES) ||
                             (!continuousDiagonalXPositive &&
@@ -499,7 +547,20 @@ void MovementController::update()
 
             if (xAtLimit || yAtLimit)
             {
-                // We've hit a limit, stop diagonal movement and log position
+                // Log specific limits that were reached
+                if (xAtLimit)
+                {
+                    Serial.println(continuousDiagonalXPositive
+                                       ? F("LIMIT:X_MAX")
+                                       : F("LIMIT:X_MIN"));
+                }
+                if (yAtLimit)
+                {
+                    Serial.println(continuousDiagonalYPositive
+                                       ? F("LIMIT:Y_MAX")
+                                       : F("LIMIT:Y_MIN"));
+                }
+
                 Serial.println(
                     F("Diagonal movement reached limit. Final position:"));
                 logPosition();

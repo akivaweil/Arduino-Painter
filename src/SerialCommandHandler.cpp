@@ -4,17 +4,20 @@
 #include <config.h>
 
 #include "MaintenanceController.h"
+#include "ServoController.h"
 
 SerialCommandHandler::SerialCommandHandler(StateManager& state,
                                            MovementController& movement,
                                            HomingController& homing,
                                            PatternExecutor& pattern,
-                                           MaintenanceController& maintenance)
+                                           MaintenanceController& maintenance,
+                                           ServoController& servo)
     : stateManager(state),
       movementController(movement),
       homingController(homing),
       patternExecutor(pattern),
-      maintenanceController(maintenance)
+      maintenanceController(maintenance),
+      servoController(servo)
 {
 }
 
@@ -43,6 +46,8 @@ void SerialCommandHandler::setup()
     Serial.println(F("  CLEAN_TIME <seconds> - Set clean duration"));
     Serial.println(F("  BACK_WASH  - Activate back wash"));
     Serial.println(F("  BACK_WASH_TIME <seconds> - Set back wash duration"));
+    Serial.println(F("  SERVO <angle>    - Set servo angle (0-180)"));
+    Serial.println(F("  SERVO_GET        - Get current servo angle"));
 }
 
 void SerialCommandHandler::processCommands()
@@ -707,6 +712,17 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
             }
         }
     }
+    else if (command.startsWith("SERVO "))
+    {
+        handleServoCommand(command);
+    }
+    else if (command == "SERVO_GET")
+    {
+        int currentAngle = servoController.getCurrentAngle();
+        snprintf(responseBuffer, sizeof(responseBuffer),
+                 "Current servo angle: %d", currentAngle);
+        responseMsg = responseBuffer;
+    }
     else
     {
         validCommand = false;
@@ -917,5 +933,27 @@ void SerialCommandHandler::handleSprayToggle(const String& state)
     else
     {
         sendResponse(false, "Invalid spray toggle state");
+    }
+}
+
+void SerialCommandHandler::handleServoCommand(const String& command)
+{
+    int spaceIndex = command.indexOf(' ');
+    if (spaceIndex == -1)
+    {
+        sendResponse(false, "Invalid servo command format");
+        return;
+    }
+
+    int angle = command.substring(spaceIndex + 1).toInt();
+    if (servoController.setAngle(angle))
+    {
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "Servo angle set to %d", angle);
+        sendResponse(true, buffer);
+    }
+    else
+    {
+        sendResponse(false, "Invalid servo angle");
     }
 }

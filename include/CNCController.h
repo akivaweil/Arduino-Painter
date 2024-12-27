@@ -7,6 +7,7 @@
 #include "MovementController.h"
 #include "PatternExecutor.h"
 #include "SerialCommandHandler.h"
+#include "ServoController.h"
 #include "StateManager.h"
 
 class CNCController
@@ -23,6 +24,7 @@ class CNCController
     PatternExecutor patternExecutor;              // Uses movement controller
     MaintenanceController maintenanceController;  // Uses movement controller
     SerialCommandHandler serialHandler;           // Uses everything else
+    ServoController servoController;
 };
 
 #endif

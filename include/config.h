@@ -2,6 +2,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define DEBUG_MODE true
+
 // Pin Definitions
 const int X_STEP_PIN = 2;
 const int X_DIR_PIN = 3;
@@ -12,6 +14,8 @@ const int Y_DIR_PIN = 5;
 const int ROTATION_STEP_PIN = 6;
 const int ROTATION_DIR_PIN = 7;
 
+const int SERVO_PIN = 12;
+
 const int PRESSURE_POT_RELAY = 14;
 const int PAINT_RELAY_PIN = 15;
 const int WATER_DIVERSION_RELAY = 17;
@@ -19,7 +23,7 @@ const int BACK_WASH_RELAY_PIN = 16;
 
 const int X_HOME_SENSOR_PIN = 11;
 const int Y_HOME_SENSOR_PIN = 10;
-const int ROTATION_HOME_SENSOR_PIN = 12;
+const int ROTATION_HOME_SENSOR_PIN = 8;
 
 // Steps per unit - Using integers for exact step counts
 const int X_STEPS_PER_INCH = 32;     // X-axis calibration
@@ -48,5 +52,10 @@ int X_ACCEL = 5000;
 int Y_ACCEL = 5000;
 int ROTATION_ACCEL = 500;
 */
+
+// Servo configuration
+const int SERVO_MIN_ANGLE = 0;       // Minimum servo angle
+const int SERVO_MAX_ANGLE = 180;     // Maximum servo angle
+const int SERVO_DEFAULT_ANGLE = 90;  // Default starting position
 
 #endif

@@ -6,6 +6,7 @@
 #include "HomingController.h"
 #include "MovementController.h"
 #include "PatternExecutor.h"
+#include "ServoController.h"
 #include "StateManager.h"
 
 // Forward declaration
@@ -16,7 +17,8 @@ class SerialCommandHandler
    public:
     SerialCommandHandler(StateManager& state, MovementController& movement,
                          HomingController& homing, PatternExecutor& pattern,
-                         MaintenanceController& maintenance);
+                         MaintenanceController& maintenance,
+                         ServoController& servo);
     void setup();
     void processCommands();
 
@@ -29,6 +31,7 @@ class SerialCommandHandler
     HomingController& homingController;
     PatternExecutor& patternExecutor;
     MaintenanceController& maintenanceController;
+    ServoController& servoController;
 
     void handleManualMovement(const String& command);
     void handleSpeedCommand(const String& command);
@@ -39,6 +42,7 @@ class SerialCommandHandler
     void handleManualStop();
     void handleContinuousDiagonalMovement(const String& command);
     void handleSprayToggle(const String& command);
+    void handleServoCommand(const String& command);
 };
 
 #endif
