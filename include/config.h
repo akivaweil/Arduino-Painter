@@ -16,8 +16,8 @@ const int ROTATION_DIR_PIN = 7;
 
 const int SERVO_PIN = 12;
 
-const int PRESSURE_POT_RELAY = 14;
-const int PAINT_RELAY_PIN = 15;
+const int PRESSURE_POT_RELAY = 15;
+const int PAINT_RELAY_PIN = 14;
 const int WATER_DIVERSION_RELAY = 17;
 const int BACK_WASH_RELAY_PIN = 16;
 

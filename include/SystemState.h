@@ -18,6 +18,7 @@ enum SystemState
     STOPPED,
     PAUSED,
     MANUAL_ROTATING,
+    EXECUTING_MANUAL_MOVE,  // Add this new state
     BACK_WASHING,
 };
 

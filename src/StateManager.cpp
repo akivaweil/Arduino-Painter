@@ -19,54 +19,7 @@ void StateManager::setState(SystemState newState)
 
 bool StateManager::isValidTransition(SystemState newState) const
 {
-    // Shortcircuit for now
-    return true;
-    // TODO: Add back in
-    switch (currentState)
-    {
-        case IDLE:
-            return true;
-
-        case ERROR:
-            return (newState == IDLE || newState == HOMING_X ||
-                    newState == STOPPED);
-
-        case HOMING_X:
-            return (newState == ERROR || newState == HOMING_Y ||
-                    newState == STOPPED || newState == HOMED);
-
-        case HOMING_Y:
-            return (newState == ERROR || newState == HOMING_ROTATION ||
-                    newState == STOPPED || newState == HOMED);
-
-        case HOMING_ROTATION:
-            return (newState == ERROR || newState == HOMED ||
-                    newState == STOPPED);
-
-        case HOMED:
-            return (newState != ERROR && newState != IDLE) ||
-                   newState == MANUAL_ROTATING;
-
-        case EXECUTING_PATTERN:
-            return (newState == ERROR || newState == IDLE ||
-                    newState == STOPPED || newState == HOMING_X);
-
-        case STOPPED:
-            return (newState == HOMING_X);
-
-        case MANUAL_ROTATING:  // New case for manual rotation
-            return (newState == ERROR || newState == IDLE ||
-                    newState == HOMED || newState == STOPPED);
-
-        case PRIMING:
-        case CLEANING:
-        case PAINTING_SIDE:
-            return (newState == ERROR || newState == IDLE ||
-                    newState == HOMING_X || newState == STOPPED);
-
-        default:
-            return false;
-    }
+    return true;  // Allow all state transitions
 }
 
 void StateManager::reportStateChange()

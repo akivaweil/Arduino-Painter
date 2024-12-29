@@ -137,6 +137,7 @@ void PatternExecutor::update()
             executingSingleSide = false;
             currentSide = -1;  // Reset currentSide
             targetSide = -1;
+            stopped = true;  // Add this line to ensure we stay stopped
 
             // Start homing sequence
             homingController.startHoming();

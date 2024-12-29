@@ -54,9 +54,11 @@ void SerialCommandHandler::processCommands()
 {
     if (!Serial.available())
     {
-        // Check if we need to transition out of MANUAL_ROTATING state
-        if (stateManager.getCurrentState() == MANUAL_ROTATING &&
-            !movementController.isMoving())
+        // Check if we need to transition out of manual movement states
+        SystemState currentState = stateManager.getCurrentState();
+        if (!movementController.isMoving() &&
+            (currentState == MANUAL_ROTATING ||
+             currentState == EXECUTING_MANUAL_MOVE))
         {
             // Return to previous state (IDLE or HOMED)
             stateManager.setState(stateManager.getPreviousState());
@@ -148,6 +150,11 @@ void SerialCommandHandler::handleRotationCommand(const String& command)
     }
 
     float degrees = command.substring(spaceIndex + 1).toFloat();
+
+    // Invert the degrees for clockwise rotation
+    // This ensures that positive degrees = clockwise, negative =
+    // counterclockwise
+    degrees = -degrees;
 
     // Echo received command
     Serial.print(F("Manual rotation: "));
@@ -841,6 +848,7 @@ void SerialCommandHandler::handleContinuousMovement(const String& command)
     if (movementController.startContinuousMovement(axis == "X", sign == "+",
                                                    scaledSpeed, scaledAccel))
     {
+        stateManager.setState(EXECUTING_MANUAL_MOVE);
         sendResponse(true, "Manual movement started");
     }
     else
@@ -852,6 +860,12 @@ void SerialCommandHandler::handleContinuousMovement(const String& command)
 void SerialCommandHandler::handleManualStop()
 {
     movementController.stopMovement();
+    // After stopping movement, return to previous state (usually IDLE or HOMED)
+    if (stateManager.getCurrentState() != IDLE &&
+        stateManager.getCurrentState() != HOMED)
+    {
+        stateManager.setState(stateManager.getPreviousState());
+    }
     sendResponse(true, "Manual movement stopped");
 }
 

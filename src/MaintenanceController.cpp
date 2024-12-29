@@ -208,7 +208,7 @@ void MaintenanceController::executeCleanSequence()
     {
         if (!movementController.isMoving() && (millis() - stepTimer >= 1000))
         {
-            Command sprayCmd('S', 0, true);
+            Command sprayCmd('P', 0, true);
             movementController.executeCommand(sprayCmd);
             stepTimer = millis();
             cleanStep = 2;
@@ -218,7 +218,7 @@ void MaintenanceController::executeCleanSequence()
     {  // Clean for configured duration
         if (millis() - stepTimer >= cleanDurationMs)
         {
-            Command stopCmd('S', 0, false);
+            Command stopCmd('P', 0, false);
             movementController.executeCommand(stopCmd);
             cleanStep = 0;
             maintenanceStep = 0;       // Complete maintenance

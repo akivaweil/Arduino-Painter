@@ -104,6 +104,11 @@ class MovementController
     bool isManualMovement() const;
 
     ServoController* servoController;
+
+    float originalXSpeed;
+    float originalYSpeed;
+    float originalXAccel;
+    float originalYAccel;
 };
 
 #endif
