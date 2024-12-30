@@ -7,6 +7,9 @@
 #include "ServoController.h"
 #include "StateManager.h"
 
+// Forward declarations
+class TCPCommandHandler;
+
 class MovementController
 {
    public:
@@ -63,6 +66,8 @@ class MovementController
 
     void setServoController(ServoController* servo) { servoController = servo; }
 
+    void setTCPHandler(TCPCommandHandler* handler);
+
    private:
     AccelStepper stepperX;
     AccelStepper stepperY;
@@ -109,6 +114,8 @@ class MovementController
     float originalYSpeed;
     float originalXAccel;
     float originalYAccel;
+
+    TCPCommandHandler* tcpHandler;
 };
 
 #endif

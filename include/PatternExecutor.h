@@ -1,25 +1,15 @@
 #ifndef PATTERN_EXECUTOR_H
 #define PATTERN_EXECUTOR_H
 
+#include <Arduino.h>
+
 #include "Command.h"
 #include "HomingController.h"
 #include "MovementController.h"
 #include "PatternSettings.h"
 
-struct Offset
-{
-    float x;
-    float y;
-    float angle;
-};
-
-struct InitialOffsets
-{
-    Offset front;
-    Offset back;
-    Offset left;
-    Offset right;
-};
+// Forward declarations
+class TCPCommandHandler;
 
 class PatternExecutor
 {
@@ -79,6 +69,10 @@ class PatternExecutor
 
     ~PatternExecutor();
 
+    void setTCPHandler(TCPCommandHandler* handler) { tcpHandler = handler; }
+
+    void logEvent(const char* event, const String& details);
+
    private:
     MovementController& movementController;
     HomingController& homingController;  // Changed to reference
@@ -106,6 +100,7 @@ class PatternExecutor
     int calculateOptimalRotation(int targetRotation);
 
     mutable Command* currentPattern;
+    TCPCommandHandler* tcpHandler;
 };
 
 #endif

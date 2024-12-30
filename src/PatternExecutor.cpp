@@ -4,6 +4,7 @@
 #include <config.h>
 
 #include "Patterns.h"
+#include "TCPCommandHandler.h"
 
 // Structured status reporting
 void PatternExecutor::reportStatus(const char* event, const String& details)
@@ -60,7 +61,7 @@ void PatternExecutor::reportStatus(const char* event, const String& details)
         status += "|details=" + details;
     }
 
-    Serial.println(status);
+    tcpHandler->sendResponse(true, status.c_str());
 }
 
 // Rest of the file remains unchanged
@@ -105,7 +106,8 @@ PatternExecutor::PatternExecutor(MovementController& movement,
       stopped(false),
       currentRow(0),
       currentPattern(nullptr),
-      cachedPatternSide(-1)
+      cachedPatternSide(-1),
+      tcpHandler(nullptr)
 {
 }
 
@@ -586,4 +588,37 @@ void PatternExecutor::setVerticalTravel(float x, float y)
     Serial.print(settings.travelDistance.vertical.x);
     Serial.print(F(" Y: "));
     Serial.println(settings.travelDistance.vertical.y);
+}
+
+void PatternExecutor::logEvent(const char* event, const String& details)
+{
+    if (!tcpHandler)
+        return;
+
+    String status = "PATTERN_EVENT:" + String(event);
+
+    // Add pattern progress
+    if (currentPattern != nullptr)
+    {
+        status += "|progress=" + String(currentCommand + 1) + "/" +
+                  String(getCurrentPatternSize());
+    }
+
+    // Add row transition details for Y movements
+    if (strcmp(event, "MOVE_Y") == 0 && currentPattern != nullptr)
+    {
+        Command currentCmd = currentPattern[currentCommand];
+        if (currentCmd.type == 'Y' || currentCmd.type == 'N')
+        {
+            int targetRow = currentRow + (currentCmd.value > 0 ? 2 : 0);
+            status += "|details=to_row_" + String(targetRow);
+        }
+    }
+
+    if (details.length() > 0)
+    {
+        status += "|details=" + details;
+    }
+
+    tcpHandler->sendResponse(true, status.c_str());
 }

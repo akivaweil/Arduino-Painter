@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 
+#include "TCPCommandHandler.h"
 #include "config.h"
 
 const float MAX_X_TRAVEL_INCHES = 34.0;
@@ -21,7 +22,8 @@ MovementController::MovementController()
       rightSpeed(X_SPEED),
       xHomed(false),
       yHomed(false),
-      lastPositionLog(0)
+      lastPositionLog(0),
+      tcpHandler(nullptr)
 {
 }
 
@@ -393,11 +395,14 @@ void MovementController::logPosition()
     float xInches = stepsToInches(getCurrentXSteps(), X_STEPS_PER_INCH);
     float yInches = stepsToInches(getCurrentYSteps(), Y_STEPS_PER_INCH);
 
-    Serial.print(F("Position - X: "));
-    Serial.print(xInches);
-    Serial.print(F(" inches, Y: "));
-    Serial.print(yInches);
-    Serial.println(F(" inches"));
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer),
+             "Position - X: %.2f inches, Y: %.2f inches", xInches, yInches);
+
+    if (tcpHandler)
+    {
+        tcpHandler->sendResponse(true, buffer);
+    }
 }
 
 void MovementController::update()
@@ -420,18 +425,18 @@ void MovementController::update()
     // Check X axis limit clear
     bool xAtLimit = (currentXInches <= MIN_TRAVEL_INCHES ||
                      currentXInches >= MAX_X_TRAVEL_INCHES);
-    if (xWasAtLimit && !xAtLimit)
+    if (xWasAtLimit && !xAtLimit && tcpHandler)
     {
-        Serial.println(F("LIMIT_CLEAR:X"));
+        tcpHandler->sendResponse(true, "LIMIT_CLEAR:X");
     }
     xWasAtLimit = xAtLimit;
 
     // Check Y axis limit clear
     bool yAtLimit = (currentYInches <= MIN_TRAVEL_INCHES ||
                      currentYInches >= MAX_Y_TRAVEL_INCHES);
-    if (yWasAtLimit && !yAtLimit)
+    if (yWasAtLimit && !yAtLimit && tcpHandler)
     {
-        Serial.println(F("LIMIT_CLEAR:Y"));
+        tcpHandler->sendResponse(true, "LIMIT_CLEAR:Y");
     }
     yWasAtLimit = yAtLimit;
 
@@ -455,7 +460,11 @@ void MovementController::update()
     if (previouslyRunning && !motorsRunning)
     {
         // Log final position for any movement
-        Serial.println(F("Movement complete. Final position:"));
+        if (tcpHandler)
+        {
+            tcpHandler->sendResponse(true,
+                                     "Movement complete. Final position:");
+        }
         logPosition();
 
         // Turn off spray only if not in maintenance mode
@@ -549,11 +558,14 @@ void MovementController::update()
         // Add minimum travel check
         if (continuousMovementPositive && currentInches >= maxTravel)
         {
-            // Log limit reached before position
-            Serial.println(continuousMovementIsX ? F("LIMIT:X_MAX")
-                                                 : F("LIMIT:Y_MAX"));
-            Serial.println(
-                F("Continuous movement reached limit. Final position:"));
+            if (tcpHandler)
+            {
+                tcpHandler->sendResponse(true, continuousMovementIsX
+                                                   ? "LIMIT:X_MAX"
+                                                   : "LIMIT:Y_MAX");
+                tcpHandler->sendResponse(
+                    true, "Continuous movement reached limit. Final position:");
+            }
             logPosition();
             continuousMovementActive = false;
             return;
@@ -561,11 +573,14 @@ void MovementController::update()
         else if (!continuousMovementPositive &&
                  currentInches <= MIN_TRAVEL_INCHES)
         {
-            // Log limit reached before position
-            Serial.println(continuousMovementIsX ? F("LIMIT:X_MIN")
-                                                 : F("LIMIT:Y_MIN"));
-            Serial.println(
-                F("Continuous movement reached limit. Final position:"));
+            if (tcpHandler)
+            {
+                tcpHandler->sendResponse(true, continuousMovementIsX
+                                                   ? "LIMIT:X_MIN"
+                                                   : "LIMIT:Y_MIN");
+                tcpHandler->sendResponse(
+                    true, "Continuous movement reached limit. Final position:");
+            }
             logPosition();
             continuousMovementActive = false;
             return;
@@ -607,18 +622,18 @@ void MovementController::update()
         if (currentXInches > MIN_TRAVEL_INCHES &&
             currentXInches < MAX_X_TRAVEL_INCHES)
         {
-            if (xLimitReported)
+            if (xLimitReported && tcpHandler)
             {
-                Serial.println(F("LIMIT_CLEAR:X"));
+                tcpHandler->sendResponse(true, "LIMIT_CLEAR:X");
                 xLimitReported = false;
             }
         }
         if (currentYInches > MIN_TRAVEL_INCHES &&
             currentYInches < MAX_Y_TRAVEL_INCHES)
         {
-            if (yLimitReported)
+            if (yLimitReported && tcpHandler)
             {
-                Serial.println(F("LIMIT_CLEAR:Y"));
+                tcpHandler->sendResponse(true, "LIMIT_CLEAR:Y");
                 yLimitReported = false;
             }
         }
@@ -633,16 +648,18 @@ void MovementController::update()
                          currentYInches <= MIN_TRAVEL_INCHES);
 
         // Log limits as they are reached (only once)
-        if (xAtLimit && !xLimitReported)
+        if (xAtLimit && !xLimitReported && tcpHandler)
         {
-            Serial.println(continuousDiagonalXPositive ? F("LIMIT:X_MAX")
-                                                       : F("LIMIT:X_MIN"));
+            tcpHandler->sendResponse(true, continuousDiagonalXPositive
+                                               ? "LIMIT:X_MAX"
+                                               : "LIMIT:X_MIN");
             xLimitReported = true;
         }
-        if (yAtLimit && !yLimitReported)
+        if (yAtLimit && !yLimitReported && tcpHandler)
         {
-            Serial.println(continuousDiagonalYPositive ? F("LIMIT:Y_MAX")
-                                                       : F("LIMIT:Y_MIN"));
+            tcpHandler->sendResponse(true, continuousDiagonalYPositive
+                                               ? "LIMIT:Y_MAX"
+                                               : "LIMIT:Y_MIN");
             yLimitReported = true;
         }
 
@@ -736,7 +753,11 @@ bool MovementController::startContinuousMovement(bool isXAxis, bool isPositive,
         (!isPositive &&
          currentInches <= MIN_TRAVEL_INCHES))  // Changed from <= -maxTravel
     {
-        Serial.println(F("Already at travel limit, movement blocked"));
+        if (tcpHandler)
+        {
+            tcpHandler->sendResponse(
+                false, "Already at travel limit, movement blocked");
+        }
         return false;
     }
 
@@ -763,6 +784,15 @@ bool MovementController::startContinuousMovement(bool isXAxis, bool isPositive,
     continuousMovementActive = true;
     continuousMovementIsX = isXAxis;
     continuousMovementPositive = isPositive;
+
+    if (tcpHandler)
+    {
+        char buffer[128];
+        snprintf(buffer, sizeof(buffer),
+                 "Starting continuous movement - Current position: %.2f inches",
+                 currentInches);
+        tcpHandler->sendResponse(true, buffer);
+    }
 
     return true;
 }
@@ -844,6 +874,15 @@ bool MovementController::startContinuousDiagonalMovement(bool xPositive,
     continuousDiagonalXPositive = xPositive;
     continuousDiagonalYPositive = yPositive;
     continuousMovementActive = false;  // Disable single-axis movement
+
+    if (tcpHandler)
+    {
+        char buffer[128];
+        snprintf(buffer, sizeof(buffer),
+                 "Starting diagonal movement - X: %.2f, Y: %.2f inches",
+                 currentXInches, currentYInches);
+        tcpHandler->sendResponse(true, buffer);
+    }
 
     return true;
 }
@@ -943,4 +982,9 @@ bool MovementController::isPositionValid(long xSteps, long ySteps) const
 
     return (xSteps >= 0 && xSteps <= MAX_X_STEPS && ySteps >= 0 &&
             ySteps <= MAX_Y_STEPS);
+}
+
+void MovementController::setTCPHandler(TCPCommandHandler* handler)
+{
+    tcpHandler = handler;
 }
