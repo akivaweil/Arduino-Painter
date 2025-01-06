@@ -68,14 +68,50 @@ class PatternExecutor
         settings.initialOffsets.right.angle = angle;
     }
 
+    void setLipOffsets(float x, float y, float angle)
+    {
+        settings.initialOffsets.lip.x = x;
+        settings.initialOffsets.lip.y = y;
+        settings.initialOffsets.lip.angle = angle;
+    }
+
     void setGrid(int x, int y)
     {
         settings.rows.x = x;
         settings.rows.y = y;
     }
 
+    void setEnabledSides(bool front, bool right, bool back, bool left, bool lip)
+    {
+        settings.enabledSides.front = front;
+        settings.enabledSides.right = right;
+        settings.enabledSides.back = back;
+        settings.enabledSides.left = left;
+        settings.enabledSides.lip = lip;
+    }
+
+    bool isSideEnabled(int side) const
+    {
+        switch (side)
+        {
+            case 0:
+                return settings.enabledSides.front;
+            case 1:
+                return settings.enabledSides.back;
+            case 2:
+                return settings.enabledSides.left;
+            case 3:
+                return settings.enabledSides.right;
+            case 4:
+                return settings.enabledSides.lip;
+            default:
+                return false;
+        }
+    }
+
     void setHorizontalTravel(float x, float y);
     void setVerticalTravel(float x, float y);
+    void setLipTravel(float x, float y);
 
     ~PatternExecutor();
 

@@ -166,6 +166,15 @@ void MovementController::setPatternSpeed(const String& pattern,
             // Serial.println(stepperX.maxSpeed());
         }
     }
+    else if (pattern == "LIP")
+    {
+        lipSpeed = targetSpeed;
+
+        if (stateManager && isPatternActive)
+        {
+            stepperX.setMaxSpeed(targetSpeed);
+        }
+    }
     else
     {
         // Serial.print(F("ERROR: Invalid pattern received: "));
@@ -192,6 +201,10 @@ void MovementController::applyPatternSpeed(const String& pattern)
     else if (pattern == "RIGHT")
     {
         stepperX.setMaxSpeed(rightSpeed);
+    }
+    else if (pattern == "LIP")
+    {
+        stepperX.setMaxSpeed(lipSpeed);
     }
 }
 
@@ -379,7 +392,6 @@ void MovementController::stopMovement()
     }
 
     // Ensure spray is turned off
-    digitalWrite(PAINT_RELAY_PIN, HIGH);
     motorsRunning = false;
 }
 

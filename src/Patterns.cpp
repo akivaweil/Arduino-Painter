@@ -4,7 +4,7 @@
 Command FRONT[] = {
     // Initial Movement
     MOVETO_X(3.0 + .75, false),  // →3.0→ - Initial offset
-    MOVETO_Y(0 + 2.75, false),    //
+    MOVETO_Y(0 + 2.75, false),   //
 
     // Row 1
     SPRAY_ON(),           // ● - Start spray
@@ -55,7 +55,7 @@ Command FRONT[] = {
 };
 
 Command BACK[] = {
-    MOVETO_X(3.0 + .75, false),    // X offset
+    MOVETO_X(3.0 + .75, false),     // X offset
     MOVETO_Y(29.12 + 2.75, false),  // Y offset
 
     // Row 1
@@ -108,7 +108,7 @@ Command BACK[] = {
 
 Command LEFT[] = {
     // Initial Movement
-    MOVETO_X(1.0, false),    //
+    MOVETO_X(1.0, false),         //
     MOVETO_Y(3.5 + 3.25, false),  // ↑3.5↑ Initial offset
 
     // Row 1
@@ -187,7 +187,49 @@ Command RIGHT[] = {
     SPRAY_OFF(),           // ○ - Stop spray
 };
 
+Command LIP[] = {
+    // Initial Movement
+    MOVETO_X(1.0, false),       // Move to starting position
+    MOVETO_Y(0 + 2.75, false),  // Initial Y offset
+
+    // Column 1 (bottom to top)
+    SPRAY_ON(),            // Start spray
+    MOVE_Y(27.49, true),   // Move up with spray
+    SPRAY_OFF(),           // Stop spray
+    MOVE_X(4.415, false),  // Move right to next column
+
+    // Column 2 (top to bottom)
+    SPRAY_ON(),            // Start spray
+    MOVE_Y(-27.49, true),  // Move down with spray
+    SPRAY_OFF(),           // Stop spray
+    MOVE_X(4.415, false),  // Move right to next column
+
+    // Column 3 (bottom to top)
+    SPRAY_ON(),            // Start spray
+    MOVE_Y(27.49, true),   // Move up with spray
+    SPRAY_OFF(),           // Stop spray
+    MOVE_X(4.415, false),  // Move right to next column
+
+    // Column 4 (top to bottom)
+    SPRAY_ON(),            // Start spray
+    MOVE_Y(-27.49, true),  // Move down with spray
+    SPRAY_OFF(),           // Stop spray
+    MOVE_X(4.415, false),  // Move right to next column
+
+    // Column 5 (bottom to top)
+    SPRAY_ON(),            // Start spray
+    MOVE_Y(27.49, true),   // Move up with spray
+    SPRAY_OFF(),           // Stop spray
+    MOVE_X(4.415, false),  // Move right to next column
+
+    // Column 6 (top to bottom)
+    SPRAY_ON(),            // Start spray
+    MOVE_Y(-27.49, true),  // Move down with spray
+    SPRAY_OFF(),           // Stop spray
+};
+
 const int FRONT_SIZE = sizeof(FRONT) / sizeof(Command);
 const int BACK_SIZE = sizeof(BACK) / sizeof(Command);
 const int LEFT_SIZE = sizeof(LEFT) / sizeof(Command);
 const int RIGHT_SIZE = sizeof(RIGHT) / sizeof(Command);
+const int LIP_SIZE = sizeof(LIP) / sizeof(Command);

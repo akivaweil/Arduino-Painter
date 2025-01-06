@@ -10,7 +10,7 @@ struct PatternSettings
             float x;
             float y;
             float angle;
-        } front, right, back, left;
+        } front, right, back, left, lip;
     } initialOffsets;
 
     struct
@@ -19,7 +19,7 @@ struct PatternSettings
         {
             float x;
             float y;
-        } horizontal, vertical;
+        } horizontal, vertical, lip;
     } travelDistance;
 
     struct
@@ -27,6 +27,15 @@ struct PatternSettings
         int x;
         int y;
     } rows;
+
+    struct
+    {
+        bool front;
+        bool right;
+        bool back;
+        bool left;
+        bool lip;
+    } enabledSides;
 
     // Constructor with default values
     PatternSettings()
@@ -60,6 +69,13 @@ struct PatternSettings
         // Default grid dimensions
         rows.x = 8;
         rows.y = 6;
+
+        // All sides enabled by default
+        enabledSides.front = true;
+        enabledSides.right = true;
+        enabledSides.back = true;
+        enabledSides.left = true;
+        enabledSides.lip = true;
     }
 };
 

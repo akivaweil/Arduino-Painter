@@ -73,6 +73,7 @@ class MovementController
     float backSpeed;
     float leftSpeed;
     float rightSpeed;
+    float lipSpeed;
 
     bool xHomed;
     bool yHomed;

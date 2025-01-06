@@ -146,9 +146,13 @@ void PatternExecutor::update()
         }
         else
         {
-            currentSide++;
+            // Find next enabled side
+            do
+            {
+                currentSide++;
+            } while (currentSide < 5 && !isSideEnabled(currentSide));
 
-            if (currentSide >= 4)
+            if (currentSide >= 5)
             {
                 reportStatus("PATTERN_COMPLETE", "all_sides");
                 currentSide = -1;
@@ -156,14 +160,7 @@ void PatternExecutor::update()
                 executingSingleSide = false;
                 movementController.resetToDefaultSpeed();
 
-                // // Add debug logging
-                // Serial.println(F("=== Pattern Complete Rotation Debug ==="));
-                // Serial.print(F("Current rotation steps: "));
-                // Serial.println(movementController.getCurrentRotationSteps());
                 long homePos = homingController.getHomeRotationPosition();
-                // Serial.print(F("Home position steps: "));
-                // Serial.println(homePos);
-                // Serial.println(F("Sending absolute rotation command..."));
 
                 // Return rotation to home position using absolute position
                 Command rotateHome('R', homePos, true);
@@ -200,21 +197,16 @@ void PatternExecutor::update()
                     case 3:  // Going to RIGHT
                         targetRotation = 270;
                         break;
+                    case 4:  // Going to LIP
+                        targetRotation =
+                            0;  // LIP pattern starts from front position
+                        break;
                 }
 
                 if (targetRotation != currentRotation)
                 {
                     int optimizedRotation =
                         calculateOptimalRotation(targetRotation);
-
-                    // // Debug logging
-                    // Serial.println(F("=== Side Change Rotation Debug ==="));
-                    // Serial.print(F("Target rotation: "));
-                    // Serial.println(targetRotation);
-                    // Serial.print(F("Current rotation: "));
-                    // Serial.println(currentRotation);
-                    // Serial.print(F("Optimized rotation: "));
-                    // Serial.println(optimizedRotation);
 
                     Command rotateCmd('R', optimizedRotation, false);
                     movementController.executeCommand(rotateCmd);
@@ -242,7 +234,8 @@ void PatternExecutor::startPattern()
 
 void PatternExecutor::startSingleSide(int side)
 {
-    if (side >= 0 && side < 4)
+    if (side >= 0 && side < 5 &&
+        isSideEnabled(side))  // Check if side is enabled
     {
         stopped = false;
         currentSide = side;
@@ -268,19 +261,13 @@ void PatternExecutor::startSingleSide(int side)
             case 3:  // RIGHT
                 targetRotation = 270;
                 break;
+            case 4:                  // LIP
+                targetRotation = 0;  // LIP pattern starts from front position
+                break;
         }
 
         // Optimize rotation direction
         int optimizedRotation = calculateOptimalRotation(targetRotation);
-
-        // // Add debug logging
-        // Serial.println(F("=== Starting Single Side Rotation Debug ==="));
-        // Serial.print(F("Target rotation: "));
-        // Serial.println(targetRotation);
-        // Serial.print(F("Optimized rotation: "));
-        // Serial.println(optimizedRotation);
-        // Serial.print(F("Current rotation: "));
-        // Serial.println(currentRotation);
 
         // Execute optimized rotation
         Command rotateCmd('R', optimizedRotation, false);
@@ -291,7 +278,8 @@ void PatternExecutor::startSingleSide(int side)
     }
     else
     {
-        reportStatus("ERROR", "invalid_side_selected");
+        reportStatus("ERROR", side >= 0 && side < 5 ? "side_disabled"
+                                                    : "invalid_side_selected");
     }
 }
 
@@ -403,6 +391,8 @@ String PatternExecutor::getCurrentPatternName() const
             return "LEFT";
         case 3:
             return "RIGHT";
+        case 4:
+            return "LIP";
         default:
             return "";
     }
@@ -435,9 +425,11 @@ Command* PatternExecutor::generatePattern(int side) const
     Serial.print(F("Side: "));
     Serial.println(side);
 
-    // Get side-specific settings
-    float xOffset = 0, yOffset = 0, angle = 0;
-    float xTravel = 0, yTravel = 0;
+    float xOffset = 0;
+    float yOffset = 0;
+    float angle = 0;
+    float xTravel = 0;
+    float yTravel = 0;
 
     switch (side)
     {
@@ -473,6 +465,14 @@ Command* PatternExecutor::generatePattern(int side) const
             xTravel = settings.travelDistance.horizontal.x;
             yTravel = settings.travelDistance.horizontal.y;
             break;
+        case 4:  // LIP
+            Serial.println(F("Generating LIP pattern"));
+            xOffset = settings.initialOffsets.lip.x;  // Use lip offsets as base
+            yOffset = settings.initialOffsets.lip.y;
+            angle = settings.initialOffsets.lip.angle;
+            xTravel = settings.travelDistance.lip.x;
+            yTravel = settings.travelDistance.lip.y;
+            break;
     }
 
     Serial.println(F("Pattern settings:"));
@@ -501,32 +501,63 @@ Command* PatternExecutor::generatePattern(int side) const
     // Generate rows
     int numRows = (side == 2 || side == 3) ? settings.rows.x : settings.rows.y;
 
-    for (int row = 0; row < numRows; row++)
-    {
-        // Start spray
-        pattern[idx++] = SPRAY_ON();
-
-        // Move across - Use X movement instead of Y
-        float dist = xTravel;
-        if (row % 2 == 1)
+    if (side == 4)
+    {  // LIP pattern - uses columns instead of rows
+        for (int col = 0; col < numRows; col++)
         {
-            dist = -dist;
+            // Start spray
+            pattern[idx++] = SPRAY_ON();
+
+            // Move vertically - Use Y movement for main motion
+            float dist = yTravel;
+            if (col % 2 == 1)
+            {
+                dist = -dist;  // Alternate direction for each column
+            }
+            pattern[idx++] = MOVE_Y(dist, true);
+
+            // Stop spray
+            pattern[idx++] = SPRAY_OFF();
+
+            // Move to next column if not last column
+            if (col < numRows - 1)
+            {
+                pattern[idx++] =
+                    MOVE_X(xTravel, false);  // Short X movement to next column
+            }
         }
-        pattern[idx++] = MOVE_X(dist, true);  // Changed from MOVE_Y to MOVE_X
-
-        // Stop spray
-        pattern[idx++] = SPRAY_OFF();
-
-        // Move to next row if not last row - Use Y movement instead of X
-        if (row < numRows - 1)
+    }
+    else
+    {
+        for (int row = 0; row < numRows; row++)
         {
-            float moveY = yTravel;
-            if (side == 1 || side == 3)
-            {                    // BACK or RIGHT
-                moveY = -moveY;  // Invert Y direction for back and right sides
+            // Start spray
+            pattern[idx++] = SPRAY_ON();
+
+            // Move across - Use X movement instead of Y
+            float dist = xTravel;
+            if (row % 2 == 1)
+            {
+                dist = -dist;
             }
             pattern[idx++] =
-                MOVE_Y(moveY, false);  // Changed from MOVE_X to MOVE_Y
+                MOVE_X(dist, true);  // Changed from MOVE_Y to MOVE_X
+
+            // Stop spray
+            pattern[idx++] = SPRAY_OFF();
+
+            // Move to next row if not last row - Use Y movement instead of X
+            if (row < numRows - 1)
+            {
+                float moveY = yTravel;
+                if (side == 1 || side == 3)
+                {  // BACK or RIGHT
+                    moveY =
+                        -moveY;  // Invert Y direction for back and right sides
+                }
+                pattern[idx++] =
+                    MOVE_Y(moveY, false);  // Changed from MOVE_X to MOVE_Y
+            }
         }
     }
 
@@ -586,4 +617,27 @@ void PatternExecutor::setVerticalTravel(float x, float y)
     Serial.print(settings.travelDistance.vertical.x);
     Serial.print(F(" Y: "));
     Serial.println(settings.travelDistance.vertical.y);
+}
+
+void PatternExecutor::setLipTravel(float x, float y)
+{
+    Serial.println(F("\n=== Setting Lip Travel ==="));
+    Serial.print(F("Previous values - X: "));
+    Serial.print(settings.travelDistance.lip.x);
+    Serial.print(F(" Y: "));
+    Serial.println(settings.travelDistance.lip.y);
+
+    Serial.print(F("New values - X: "));
+    Serial.print(x);
+    Serial.print(F(" Y: "));
+    Serial.println(y);
+
+    settings.travelDistance.lip.x = x;
+    settings.travelDistance.lip.y = y;
+
+    // Verify the values were set correctly
+    Serial.print(F("Verified values - X: "));
+    Serial.print(settings.travelDistance.lip.x);
+    Serial.print(F(" Y: "));
+    Serial.println(settings.travelDistance.lip.y);
 }

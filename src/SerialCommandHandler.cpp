@@ -30,6 +30,7 @@ void SerialCommandHandler::setup()
     Serial.println(F("  BACK       - Paint back side"));
     Serial.println(F("  LEFT       - Paint left side"));
     Serial.println(F("  RIGHT      - Paint right side"));
+    Serial.println(F("  LIP        - Paint lip pattern"));
     Serial.println(F("  PRIME      - Prime spray gun"));
     Serial.println(F("  CLEAN      - Clean spray gun"));
     Serial.println(F("  CALIBRATE  - Quick calibration"));
@@ -48,6 +49,17 @@ void SerialCommandHandler::setup()
     Serial.println(F("  BACK_WASH_TIME <seconds> - Set back wash duration"));
     Serial.println(F("  SERVO <angle>    - Set servo angle (0-180)"));
     Serial.println(F("  SERVO_GET        - Get current servo angle"));
+    Serial.println(F("  SET_GRID <x> <y> - Set pattern grid dimensions"));
+    Serial.println(
+        F("  SET_HORIZONTAL_TRAVEL <x> <y> - Set horizontal travel distances"));
+    Serial.println(
+        F("  SET_VERTICAL_TRAVEL <x> <y> - Set vertical travel distances"));
+    Serial.println(
+        F("  SET_LIP_TRAVEL <x> <y> - Set lip pattern travel distances"));
+    Serial.println(
+        F("  SET_OFFSET <side> <x> <y> <angle> - Set offsets for side"));
+    Serial.println(F("  PRIME_TIME <seconds> - Set prime duration"));
+    Serial.println(F("  CLEAN_TIME <seconds> - Set clean duration"));
 }
 
 void SerialCommandHandler::processCommands()
@@ -354,7 +366,7 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
     static char responseBuffer[128];  // Increased buffer size
 
     if (command == "START" || command == "FRONT" || command == "BACK" ||
-        command == "LEFT" || command == "RIGHT")
+        command == "LEFT" || command == "RIGHT" || command == "LIP")
     {
         if (currentState == HOMED)
         {
@@ -389,10 +401,11 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
             }
             else
             {
-                int side = (command == "FRONT")  ? 0
-                           : (command == "BACK") ? 1
-                           : (command == "LEFT") ? 2
-                                                 : 3;
+                int side = (command == "FRONT")   ? 0
+                           : (command == "BACK")  ? 1
+                           : (command == "LEFT")  ? 2
+                           : (command == "RIGHT") ? 3
+                                                  : 4;  // LIP pattern
                 patternExecutor.startSingleSide(side);
                 stateManager.setState(PAINTING_SIDE);
                 responseMsg = "Starting single side pattern";
@@ -677,6 +690,11 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
                 patternExecutor.setRightOffsets(x, y, angle);
                 responseMsg = "Right offsets updated";
             }
+            else if (side == "LIP")
+            {
+                patternExecutor.setLipOffsets(x, y, angle);
+                responseMsg = "Lip offsets updated";
+            }
             else
             {
                 validCommand = false;
@@ -736,6 +754,71 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
         snprintf(responseBuffer, sizeof(responseBuffer),
                  "Current servo angle: %d", currentAngle);
         responseMsg = responseBuffer;
+    }
+    else if (command.startsWith("SET_LIP_TRAVEL "))
+    {
+        int spaceIndex = command.indexOf(' ', 15);  // After "SET_LIP_TRAVEL "
+        if (spaceIndex != -1)
+        {
+            // Debug: Show raw command
+            Serial.print(F("Raw command: "));
+            Serial.println(command);
+
+            String xStr = command.substring(15, spaceIndex);
+            String yStr = command.substring(spaceIndex + 1);
+
+            // Debug: Show parsed strings
+            Serial.print(F("Parsed strings - X: '"));
+            Serial.print(xStr);
+            Serial.print(F("' Y: '"));
+            Serial.print(yStr);
+            Serial.println(F("'"));
+
+            float x = xStr.toFloat();
+            float y = yStr.toFloat();
+
+            // Debug log the received values
+            Serial.println(F("=== SET_LIP_TRAVEL Debug ==="));
+            Serial.print(F("Input values - X: "));
+            Serial.print(x);
+            Serial.print(F(" Y: "));
+            Serial.println(y);
+
+            // Validate values
+            if (x <= 0 || y <= 0)
+            {
+                Serial.println(
+                    F("ERROR: Invalid travel distances (must be > 0)"));
+                responseMsg = "Invalid travel distances";
+                validCommand = false;
+            }
+            else
+            {
+                patternExecutor.setLipTravel(x, y);
+                responseMsg = "Lip travel distances updated";
+
+                // Debug: Verify values were set
+                Serial.println(F("Travel distances set successfully"));
+            }
+        }
+        else
+        {
+            Serial.println(F("ERROR: Invalid format for SET_LIP_TRAVEL"));
+            validCommand = false;
+            responseMsg = "Invalid command format";
+        }
+    }
+    else if (command.startsWith("SET_ENABLED_SIDES"))
+    {
+        // Format: SET_ENABLED_SIDES FRONT=1 RIGHT=1 BACK=1 LEFT=1 LIP=1
+        bool front = command.indexOf("FRONT=1") != -1;
+        bool right = command.indexOf("RIGHT=1") != -1;
+        bool back = command.indexOf("BACK=1") != -1;
+        bool left = command.indexOf("LEFT=1") != -1;
+        bool lip = command.indexOf("LIP=1") != -1;
+
+        patternExecutor.setEnabledSides(front, right, back, left, lip);
+        responseMsg = "Enabled sides updated";
     }
     else
     {
