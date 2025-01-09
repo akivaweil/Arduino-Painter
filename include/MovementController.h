@@ -63,6 +63,10 @@ class MovementController
 
     void setServoController(ServoController* servo) { servoController = servo; }
 
+    void pauseExecution();   // New method to pause pattern execution
+    void resumeExecution();  // New method to resume pattern execution
+    bool isPaused() const { return executionPaused; }
+
    private:
     AccelStepper stepperX;
     AccelStepper stepperY;
@@ -110,6 +114,14 @@ class MovementController
     float originalYSpeed;
     float originalXAccel;
     float originalYAccel;
+
+    bool executionPaused;
+    long pausedXPosition;
+    long pausedYPosition;
+    long pausedRotationPosition;
+    float pausedXSpeed;
+    float pausedYSpeed;
+    float pausedRotationSpeed;
 };
 
 #endif

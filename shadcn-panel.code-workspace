@@ -1,0 +1,14 @@
+{
+  "folders": [
+	{
+		"path": "../shadcn-panel"
+	},
+	{
+		"path": "../Tyler Backend"
+	},
+	{
+		"path": "."
+	}
+],
+  "settings": {}
+}

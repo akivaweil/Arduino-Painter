@@ -214,6 +214,14 @@ void HomingController::startHoming()
 {
     if (!homing)
     {
+        // Don't start homing if we're preparing for pattern execution
+        if (stateManager &&
+            stateManager->getCurrentState() == EXECUTING_PATTERN)
+        {
+            Serial.println(F("Cannot start homing while preparing pattern"));
+            return;
+        }
+
         // Turn off spray gun when starting homing
         digitalWrite(PAINT_RELAY_PIN, HIGH);
 

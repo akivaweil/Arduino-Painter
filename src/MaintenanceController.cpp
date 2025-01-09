@@ -47,6 +47,21 @@ void MaintenanceController::setup()
 
 void MaintenanceController::update()
 {
+    // Add debug logging
+    if (queuedCommand.length() > 0)
+    {
+        Serial.print(F("Queued command pending: "));
+        Serial.println(queuedCommand);
+        Serial.print(F("Pressure pot active time: "));
+        Serial.println(getPressurePotActiveTime());
+    }
+
+    // Don't process maintenance if pattern is executing
+    if (stateManager && stateManager->getCurrentState() == EXECUTING_PATTERN)
+    {
+        return;
+    }
+
     // Check for queued commands that need to be executed first
     if (queuedCommand.length() > 0 && isPressurePotActive() &&
         (millis() - pressurePotActivationTime >= 5000))
@@ -287,7 +302,22 @@ void MaintenanceController::setWaterDiversion(bool active)
 void MaintenanceController::queueDelayedCommand(const String& command)
 {
     queuedCommand = command;
-    commandQueueTime = millis();
+    Serial.print(F("Command queued: "));
+    Serial.println(command);
+}
+
+void MaintenanceController::executeQueuedCommand()
+{
+    if (queuedCommand.length() > 0)
+    {
+        Serial.print(F("Executing queued command: "));
+        Serial.println(queuedCommand);
+        if (serialHandler)
+        {
+            serialHandler->handleSystemCommand(queuedCommand);
+        }
+        queuedCommand = "";  // Clear the queue after execution
+    }
 }
 
 void MaintenanceController::setSerialHandler(SerialCommandHandler* handler)

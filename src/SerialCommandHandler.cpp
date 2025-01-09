@@ -35,6 +35,8 @@ void SerialCommandHandler::setup()
     Serial.println(F("  CLEAN      - Clean spray gun"));
     Serial.println(F("  CALIBRATE  - Quick calibration"));
     Serial.println(F("  STOP       - stop"));
+    Serial.println(F("  PAUSE      - Pause pattern execution"));
+    Serial.println(F("  RESUME     - Resume paused pattern"));
     Serial.println(F("  MOVE_X <dist> - Relative X movement"));
     Serial.println(F("  MOVE_Y <dist> - Relative Y movement"));
     Serial.println(F("  GOTO_X <pos> - Absolute X movement"));
@@ -81,6 +83,13 @@ void SerialCommandHandler::processCommands()
     String command = Serial.readStringUntil('\n');
     command.trim();
     command.toUpperCase();
+
+    // Handle pause commands
+    if (command == "PAUSE" || command == "RESUME")
+    {
+        handlePauseCommand(command);
+        return;
+    }
 
     // Handle movement commands separately
     if (command.startsWith("MOVE_") || command.startsWith("GOTO_") ||
@@ -413,11 +422,23 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
         }
         else
         {
-            validCommand = false;
-            snprintf(responseBuffer, sizeof(responseBuffer),
-                     "Can only start painting from HOMED state (current: %s)",
-                     getStateString(currentState));
-            responseMsg = responseBuffer;
+            if (command == "START")
+            {
+                if (currentState == PAUSED)
+                {
+                    movementController.resumeExecution();
+                    sendResponse(true, "Pattern execution resumed");
+                }
+            }
+            else
+            {
+                validCommand = false;
+                snprintf(
+                    responseBuffer, sizeof(responseBuffer),
+                    "Can only start painting from HOMED state (current: %s)",
+                    getStateString(currentState));
+                responseMsg = responseBuffer;
+            }
         }
     }
     else if (command == "HOME")
@@ -825,6 +846,7 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
         validCommand = false;
         snprintf(responseBuffer, sizeof(responseBuffer),
                  "Unknown command: '%s'", command.c_str());
+        responseMsg = responseBuffer;
     }
 
     sendResponse(validCommand, responseMsg);
@@ -1059,5 +1081,35 @@ void SerialCommandHandler::handleServoCommand(const String& command)
     else
     {
         sendResponse(false, "Invalid servo angle");
+    }
+}
+
+void SerialCommandHandler::handlePauseCommand(const String& command)
+{
+    SystemState currentState = stateManager.getCurrentState();
+
+    if (command == "PAUSE")
+    {
+        if (currentState == EXECUTING_PATTERN || currentState == PAINTING_SIDE)
+        {
+            movementController.pauseExecution();
+            sendResponse(true, "Pattern execution paused");
+        }
+        else
+        {
+            sendResponse(false, "Can only pause during pattern execution");
+        }
+    }
+    else if (command == "RESUME")
+    {
+        if (currentState == PAUSED)
+        {
+            movementController.resumeExecution();
+            sendResponse(true, "Pattern execution resumed");
+        }
+        else
+        {
+            sendResponse(false, "System is not paused");
+        }
     }
 }

@@ -113,7 +113,8 @@ PatternExecutor::~PatternExecutor() { delete[] currentPattern; }
 
 void PatternExecutor::update()
 {
-    if (stopped || movementController.isMoving())
+    if (stopped || movementController.isMoving() ||
+        movementController.isPaused())
     {
         return;
     }
@@ -199,7 +200,7 @@ void PatternExecutor::update()
                         break;
                     case 4:  // Going to LIP
                         targetRotation =
-                            0;  // LIP pattern starts from front position
+                            90;  // LIP pattern starts from front position
                         break;
                 }
 
@@ -315,6 +316,13 @@ void PatternExecutor::processNextCommand()
         return;
     }
 
+    // Add debug logging
+    Serial.println(F("=== Processing Command ==="));
+    Serial.print(F("Command index: "));
+    Serial.println(currentCommand);
+    Serial.print(F("Command type: "));
+    Serial.println(pattern[currentCommand].type);
+
     // Only apply pattern speed if we're still executing (not stopped)
     if (!stopped)
     {
@@ -358,6 +366,7 @@ void PatternExecutor::processNextCommand()
     }
     else
     {
+        Serial.println(F("ERROR: Command execution failed"));
         reportStatus("ERROR", "command_execution_failed");
     }
 }

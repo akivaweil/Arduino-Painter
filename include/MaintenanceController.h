@@ -39,6 +39,7 @@ class MaintenanceController
     }
 
     void queueDelayedCommand(const String& command);
+    void executeQueuedCommand();
     void setSerialHandler(SerialCommandHandler* handler);
 
     void startBackWash();

@@ -43,6 +43,7 @@ class SerialCommandHandler
     void handleContinuousDiagonalMovement(const String& command);
     void handleSprayToggle(const String& command);
     void handleServoCommand(const String& command);
+    void handlePauseCommand(const String& command);
 };
 
 #endif

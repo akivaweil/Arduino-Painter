@@ -21,7 +21,8 @@ MovementController::MovementController()
       rightSpeed(X_SPEED),
       xHomed(false),
       yHomed(false),
-      lastPositionLog(0)
+      lastPositionLog(0),
+      executionPaused(false)
 {
 }
 
@@ -250,6 +251,15 @@ float MovementController::stepsToAngle(long steps) const
 
 bool MovementController::executeCommand(const Command& cmd)
 {
+    // Add debug logging
+    Serial.println(F("=== Executing Movement Command ==="));
+    Serial.print(F("Command type: "));
+    Serial.println(cmd.type);
+    Serial.print(F("Value: "));
+    Serial.println(cmd.value);
+    Serial.print(F("Spray: "));
+    Serial.println(cmd.sprayOn ? "ON" : "OFF");
+
     updateSprayControl(cmd);
 
     // If it's a spray-only command, return true since updateSprayControl
@@ -258,6 +268,9 @@ bool MovementController::executeCommand(const Command& cmd)
     {
         return true;
     }
+
+    // Set motorsRunning to true when starting a new movement
+    motorsRunning = true;
 
     long targetSteps = 0;
     float targetPosition = 0.0;
@@ -291,7 +304,7 @@ bool MovementController::executeCommand(const Command& cmd)
         case 'R':  // Rotation movement (in degrees)
         {
             // Convert degrees to steps
-            targetSteps = (cmd.value * 400) / 360;
+            targetSteps = (cmd.value * STEPS_PER_ROTATION) / 360;
             if (cmd.sprayOn)  // If absolute positioning
             {
                 stepperRotation.moveTo(targetSteps);
@@ -339,7 +352,13 @@ void MovementController::updateSprayControl(const Command& cmd)
     }
 }
 
-bool MovementController::isMoving() const { return motorsRunning; }
+bool MovementController::isMoving() const
+{
+    bool moving = const_cast<AccelStepper&>(stepperX).isRunning() ||
+                  const_cast<AccelStepper&>(stepperY).isRunning() ||
+                  const_cast<AccelStepper&>(stepperRotation).isRunning();
+    return moving;
+}
 
 void MovementController::stop()
 {
@@ -414,10 +433,20 @@ void MovementController::logPosition()
 
 void MovementController::update()
 {
-    // Update all stepper positions
+    // If we're paused, don't update stepper positions
+    if (executionPaused)
+    {
+        return;
+    }
+
+    // Update motor states
     stepperX.run();
     stepperY.run();
     stepperRotation.run();
+
+    // Update motorsRunning flag based on actual motor states
+    motorsRunning = stepperX.isRunning() || stepperY.isRunning() ||
+                    stepperRotation.isRunning();
 
     // Update position cache
     updatePositionCache();
@@ -955,4 +984,71 @@ bool MovementController::isPositionValid(long xSteps, long ySteps) const
 
     return (xSteps >= 0 && xSteps <= MAX_X_STEPS && ySteps >= 0 &&
             ySteps <= MAX_Y_STEPS);
+}
+
+void MovementController::pauseExecution()
+{
+    if (!executionPaused && stateManager)
+    {
+        // Store current positions and speeds
+        pausedXPosition = stepperX.currentPosition();
+        pausedYPosition = stepperY.currentPosition();
+        pausedRotationPosition = stepperRotation.currentPosition();
+
+        pausedXSpeed = stepperX.maxSpeed();
+        pausedYSpeed = stepperY.maxSpeed();
+        pausedRotationSpeed = stepperRotation.maxSpeed();
+
+        // Stop all motors immediately
+        stepperX.stop();
+        stepperY.stop();
+        stepperRotation.stop();
+
+        // Turn off spray
+        digitalWrite(PAINT_RELAY_PIN, HIGH);
+
+        // Set the paused state
+        executionPaused = true;
+        stateManager->setState(PAUSED);
+
+        // Wait for motors to come to a complete stop
+        while (stepperX.isRunning() || stepperY.isRunning() ||
+               stepperRotation.isRunning())
+        {
+            stepperX.run();
+            stepperY.run();
+            stepperRotation.run();
+        }
+    }
+}
+
+void MovementController::resumeExecution()
+{
+    if (executionPaused && stateManager)
+    {
+        // Restore speeds
+        stepperX.setMaxSpeed(pausedXSpeed);
+        stepperY.setMaxSpeed(pausedYSpeed);
+        stepperRotation.setMaxSpeed(pausedRotationSpeed);
+
+        // Move back to the positions where we paused
+        stepperX.moveTo(pausedXPosition);
+        stepperY.moveTo(pausedYPosition);
+        stepperRotation.moveTo(pausedRotationPosition);
+
+        // Reset pause state
+        executionPaused = false;
+
+        // Restore previous state (either EXECUTING_PATTERN or PAINTING_SIDE)
+        SystemState previousState = stateManager->getPreviousState();
+        if (previousState == EXECUTING_PATTERN ||
+            previousState == PAINTING_SIDE)
+        {
+            stateManager->setState(previousState);
+        }
+        else
+        {
+            stateManager->setState(EXECUTING_PATTERN);
+        }
+    }
 }
