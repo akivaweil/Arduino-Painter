@@ -32,6 +32,10 @@
 // website
 //                                 # (Feature in development)
 
+// ### System Configuration ###
+// PRESSURE_POT_DELAY = "pressure_pot_delay"  # Set delay before pattern start (milliseconds)
+//                                           # Example: PRESSURE_POT_DELAY 5000
+
 // # Usage Examples:
 // # run_command(HOME)              # Return paint head to starting position
 // # run_command(RUN_SIDES, "13")   # Execute painting sequence for sides 1 and

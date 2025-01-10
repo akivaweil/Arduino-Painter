@@ -47,15 +47,6 @@ void MaintenanceController::setup()
 
 void MaintenanceController::update()
 {
-    // Add debug logging
-    if (queuedCommand.length() > 0)
-    {
-        Serial.print(F("Queued command pending: "));
-        Serial.println(queuedCommand);
-        Serial.print(F("Pressure pot active time: "));
-        Serial.println(getPressurePotActiveTime());
-    }
-
     // Don't process maintenance if pattern is executing
     if (stateManager && stateManager->getCurrentState() == EXECUTING_PATTERN)
     {
@@ -64,7 +55,8 @@ void MaintenanceController::update()
 
     // Check for queued commands that need to be executed first
     if (queuedCommand.length() > 0 && isPressurePotActive() &&
-        (millis() - pressurePotActivationTime >= 5000))
+        (millis() - pressurePotActivationTime >=
+         pressurePotDelay))  // Use configurable delay
     {
         // Execute the queued command
         if (serialHandler)
@@ -130,10 +122,28 @@ void MaintenanceController::startPriming()
 
 void MaintenanceController::startCleaning()
 {
-    maintenanceStep = 2;
-    stepTimer = millis();
-    setWaterDiversion(true);  // Activate water diversion when cleaning starts
-    Serial.println(F("Starting cleaning sequence"));
+    if (!isRunningMaintenance())
+    {
+        Serial.println(F("=== Clean Settings ==="));
+        Serial.print(F("Clean duration: "));
+        Serial.print(cleanDurationMs / 1000);
+        Serial.println(F(" seconds"));
+        Serial.print(F("Clean position - X: "));
+        Serial.print(cleanPosition.x);
+        Serial.print(F(", Y: "));
+        Serial.print(cleanPosition.y);
+        Serial.print(F(", Angle: "));
+        Serial.println(cleanPosition.angle);
+
+        maintenanceStep = 2;  // Change this to 2 to indicate cleaning sequence
+        setWaterDiversion(true);
+        Serial.println(F("Starting cleaning sequence"));
+
+        if (stateManager)
+        {
+            stateManager->setState(CLEANING);
+        }
+    }
 }
 
 bool MaintenanceController::isRunningMaintenance() const
@@ -157,95 +167,162 @@ void MaintenanceController::setCleanDuration(unsigned long seconds)
     Serial.println(F(" seconds"));
 }
 
+void MaintenanceController::setPrimePosition(float x, float y, float angle)
+{
+    primePosition.x = x;
+    primePosition.y = y;
+    primePosition.angle = angle;
+}
+
+void MaintenanceController::setCleanPosition(float x, float y, float angle)
+{
+    cleanPosition.x = x;
+    cleanPosition.y = y;
+    cleanPosition.angle = angle;
+
+    // Add debug logging
+    Serial.println(F("Clean position set to:"));
+    Serial.print(F("X: "));
+    Serial.print(x);
+    Serial.print(F(" Y: "));
+    Serial.print(y);
+    Serial.print(F(" Angle: "));
+    Serial.println(angle);
+}
+
+void MaintenanceController::getPrimePosition(float& x, float& y,
+                                             float& angle) const
+{
+    x = primePosition.x;
+    y = primePosition.y;
+    angle = primePosition.angle;
+}
+
+void MaintenanceController::getCleanPosition(float& x, float& y,
+                                             float& angle) const
+{
+    x = cleanPosition.x;
+    y = cleanPosition.y;
+    angle = cleanPosition.angle;
+}
+
 void MaintenanceController::executePrimeSequence()
 {
-    static int primeStep = 0;
+    static uint8_t primeStep = 1;  // Add this to track prime sequence steps
 
-    if (primeStep == 0)
-    {                                   // Move to prime position (x=0, y=15)
-        Command moveX('M', 0, false);   // Move to X=0
-        Command moveY('N', 15, false);  // Move to Y=15
-        Command servoCmd('S', 135, false);  // Set servo to 135 degrees
-        movementController.executeCommand(moveX);
-        movementController.executeCommand(moveY);
-        movementController.executeCommand(servoCmd);
-        stepTimer = millis();
-        primeStep = 1;
-    }
-    else if (primeStep == 1)
-    {  // Wait for movement to complete
-        if (!movementController.isMoving() && (millis() - stepTimer >= 1000))
+    switch (primeStep)
+    {
+        case 1:  // Move to prime position
         {
-            Command sprayCmd(
-                'P', 0, true);  // Changed from 'S' to 'P' to control spray only
-            movementController.executeCommand(sprayCmd);
-            stepTimer = millis();
+            Command moveX('M', primePosition.x, false);
+            Command moveY('N', primePosition.y, false);
+            Command rotate('R', primePosition.angle, false);
+
+            movementController.executeCommand(moveX);
+            movementController.executeCommand(moveY);
+            movementController.executeCommand(rotate);
+
             primeStep = 2;
+            stepTimer = millis();
+            Serial.println(F("Moving to prime position"));
         }
-    }
-    else if (primeStep == 2)
-    {  // Prime for configured duration
-        if (millis() - stepTimer >= primeDurationMs)
-        {
-            Command stopCmd(
-                'P', 0,
-                false);  // Changed from 'S' to 'P' to control spray only
-            movementController.executeCommand(stopCmd);
-            primeStep = 0;
-            maintenanceStep = 0;  // Complete maintenance
-            Serial.println(F("Prime sequence complete"));
+        break;
 
-            // Start homing sequence properly through HomingController
-            if (stateManager)
+        case 2:  // Wait for movement to complete
+            if (!movementController.isMoving() &&
+                (millis() - stepTimer >= 1000))
             {
-                homingController->startHoming();  // Actually start homing
+                Command sprayCmd('P', 0, true);
+                movementController.executeCommand(sprayCmd);
+                stepTimer = millis();
+                primeStep = 3;
+                Serial.println(F("Starting prime spray"));
             }
-        }
+            break;
+
+        case 3:  // Prime for configured duration
+            if (millis() - stepTimer >= primeDurationMs)
+            {
+                Command stopCmd('P', 0, false);
+                movementController.executeCommand(stopCmd);
+                maintenanceStep = 0;  // Exit maintenance mode
+                primeStep = 1;        // Reset prime step for next time
+                Serial.println(F("Prime sequence complete"));
+
+                // Start homing sequence if homingController is available
+                if (homingController != nullptr)
+                {
+                    homingController->startHoming();
+                }
+                else
+                {
+                    Serial.println(F("Warning: HomingController not set"));
+                }
+            }
+            break;
     }
 }
 
 void MaintenanceController::executeCleanSequence()
 {
-    static int cleanStep = 0;
+    static bool movementStarted = false;
+    static bool sprayStarted = false;
+    static uint8_t cleanStep = 1;  // Add this to track clean sequence steps
 
-    if (cleanStep == 0)
+    switch (cleanStep)  // Use cleanStep instead of maintenanceStep
     {
-        Command moveX('M', 0, false);       // Move to X=0
-        Command moveY('N', 20, false);      // Move to Y=20
-        Command servoCmd('S', 135, false);  // Set servo to 135 degrees
-        movementController.executeCommand(moveX);
-        movementController.executeCommand(moveY);
-        movementController.executeCommand(servoCmd);
-        stepTimer = millis();
-        cleanStep = 1;
-    }
-    else if (cleanStep == 1)
-    {
-        if (!movementController.isMoving() && (millis() - stepTimer >= 1000))
-        {
-            Command sprayCmd('P', 0, true);
-            movementController.executeCommand(sprayCmd);
-            stepTimer = millis();
-            cleanStep = 2;
-        }
-    }
-    else if (cleanStep == 2)
-    {  // Clean for configured duration
-        if (millis() - stepTimer >= cleanDurationMs)
-        {
-            Command stopCmd('P', 0, false);
-            movementController.executeCommand(stopCmd);
-            cleanStep = 0;
-            maintenanceStep = 0;       // Complete maintenance
-            setWaterDiversion(false);  // Deactivate water diversion
-            Serial.println(F("Clean sequence complete"));
-
-            // Start homing sequence properly through HomingController
-            if (stateManager)
+        case 1:  // Move to clean position
+            if (!movementStarted)
             {
-                homingController->startHoming();  // Actually start homing
+                Serial.println(F("Moving to clean position"));
+                Serial.print(F("Target - X: "));
+                Serial.print(cleanPosition.x);
+                Serial.print(F(" Y: "));
+                Serial.print(cleanPosition.y);
+                Serial.print(F(" Angle: "));
+                Serial.println(cleanPosition.angle);
+
+                movementController.executeCommand(
+                    MOVETO_X(cleanPosition.x, false));
+                movementController.executeCommand(
+                    MOVETO_Y(cleanPosition.y, false));
+                movementController.executeCommand(ROTATE(cleanPosition.angle));
+                movementStarted = true;
+                stepTimer = millis();
             }
-        }
+            else if (!movementController.isMoving() &&
+                     (millis() - stepTimer > 1000))
+            {
+                cleanStep = 2;  // Move to spray step
+                movementStarted = false;
+                stepTimer = millis();
+            }
+            break;
+
+        case 2:  // Spray step
+            if (!sprayStarted)
+            {
+                movementController.executeCommand(SPRAY_ON());
+                Serial.print(F("Starting clean spray for "));
+                Serial.print(cleanDurationMs / 1000);
+                Serial.println(F(" seconds"));
+                sprayStarted = true;
+                stepTimer = millis();
+            }
+            else if (millis() - stepTimer >= cleanDurationMs)
+            {
+                movementController.executeCommand(SPRAY_OFF());
+                Serial.println(F("Clean sequence complete"));
+                setWaterDiversion(false);
+                maintenanceStep = 0;  // Exit maintenance mode
+                sprayStarted = false;
+                cleanStep = 1;  // Reset clean step for next time
+                if (stateManager)
+                {
+                    stateManager->setState(HOMED);
+                }
+            }
+            break;
     }
 }
 
@@ -323,4 +400,12 @@ void MaintenanceController::executeQueuedCommand()
 void MaintenanceController::setSerialHandler(SerialCommandHandler* handler)
 {
     serialHandler = handler;
+}
+
+void MaintenanceController::setPressurePotDelay(unsigned long milliseconds)
+{
+    pressurePotDelay = milliseconds;
+    Serial.print(F("Pressure pot delay set to: "));
+    Serial.print(pressurePotDelay);
+    Serial.println(F(" ms"));
 }

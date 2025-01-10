@@ -385,15 +385,19 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
                 // Instead of rejecting, activate pressure pot and queue command
                 maintenanceController.togglePressurePot();
                 maintenanceController.queueDelayedCommand(command);
-                sendResponse(true,
-                             "Activating pressure pot, command will execute in "
-                             "5 seconds");
+                char buffer[64];
+                snprintf(buffer, sizeof(buffer),
+                         "Activating pressure pot, command will execute in %lu "
+                         "milliseconds",
+                         maintenanceController.getPressurePotDelay());
+                sendResponse(true, buffer);
                 return;
             }
             // Get pressure pot activation time
-            else if (maintenanceController.getPressurePotActiveTime() < 5000)
+            else if (maintenanceController.getPressurePotActiveTime() <
+                     maintenanceController.getPressurePotDelay())
             {
-                // If pot is active but not for 5 seconds, queue the command
+                // If pot is active but not for required time, queue the command
                 maintenanceController.queueDelayedCommand(command);
                 sendResponse(
                     true,
@@ -841,6 +845,82 @@ void SerialCommandHandler::handleSystemCommand(const String& command)
         patternExecutor.setEnabledSides(front, right, back, left, lip);
         responseMsg = "Enabled sides updated";
     }
+    else if (command.startsWith("PRESSURE_POT_DELAY"))
+    {
+        handlePressurePotDelay(command);
+    }
+    else if (command.startsWith("SET_PRIME_POS"))
+    {
+        float x, y, angle;
+        int firstComma = command.indexOf(',');
+        int secondComma = command.indexOf(',', firstComma + 1);
+
+        if (firstComma != -1 && secondComma != -1)
+        {
+            x = command.substring(firstComma + 1, secondComma).toFloat();
+            y = command.substring(secondComma + 1, command.lastIndexOf(','))
+                    .toFloat();
+            angle = command.substring(command.lastIndexOf(',') + 1).toFloat();
+
+            maintenanceController.setPrimePosition(x, y, angle);
+            sendResponse(true, "Prime position updated");
+        }
+        else
+        {
+            sendResponse(false, "Invalid prime position format");
+        }
+    }
+    else if (command.startsWith("SET_CLEAN_POS"))
+    {
+        float x, y, angle;
+        int firstComma = command.indexOf(',');
+        int secondComma = command.indexOf(',', firstComma + 1);
+
+        if (firstComma != -1 && secondComma != -1)
+        {
+            x = command.substring(firstComma + 1, secondComma).toFloat();
+            y = command.substring(secondComma + 1, command.lastIndexOf(','))
+                    .toFloat();
+            angle = command.substring(command.lastIndexOf(',') + 1).toFloat();
+
+            Serial.println("Setting clean position:");
+            Serial.print("X: ");
+            Serial.print(x);
+            Serial.print(" Y: ");
+            Serial.print(y);
+            Serial.print(" Angle: ");
+            Serial.println(angle);
+
+            maintenanceController.setCleanPosition(x, y, angle);
+            sendResponse(true, "Clean position updated");
+        }
+        else
+        {
+            sendResponse(false, "Invalid clean position format");
+        }
+    }
+    else if (command == "GET_PRIME_POS")
+    {
+        float x, y, angle;
+        maintenanceController.getPrimePosition(x, y, angle);
+
+        char response[50];
+        snprintf(response, sizeof(response), "Prime pos: X=%.2f Y=%.2f A=%.2f",
+                 x, y, angle);
+        sendResponse(true, response);
+        return;
+    }
+    else if (command == "GET_CLEAN_POS")
+    {
+        float x, y, angle;
+        maintenanceController.getCleanPosition(x, y, angle);
+
+        char response[50];
+        snprintf(response, sizeof(response), "Clean pos: X=%.2f Y=%.2f A=%.2f",
+                 x, y, angle);
+        sendResponse(true, response);
+        return;
+    }
     else
     {
         validCommand = false;
@@ -1112,4 +1192,29 @@ void SerialCommandHandler::handlePauseCommand(const String& command)
             sendResponse(false, "System is not paused");
         }
     }
+}
+
+void SerialCommandHandler::handlePressurePotDelay(const String& command)
+{
+    // Expected format: PRESSURE_POT_DELAY 5000
+    int spaceIndex = command.indexOf(' ');
+    if (spaceIndex == -1)
+    {
+        sendResponse(
+            false,
+            "Invalid command format. Use: PRESSURE_POT_DELAY <milliseconds>");
+        return;
+    }
+
+    String delayStr = command.substring(spaceIndex + 1);
+    unsigned long delayMs = delayStr.toInt();
+
+    if (delayMs == 0 && delayStr != "0")
+    {
+        sendResponse(false, "Invalid delay value");
+        return;
+    }
+
+    maintenanceController.setPressurePotDelay(delayMs);
+    sendResponse(true, "Pressure pot delay updated");
 }

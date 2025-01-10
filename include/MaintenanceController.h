@@ -49,6 +49,15 @@ class MaintenanceController
         return backWashDurationMs / 1000;
     }
 
+    void setPressurePotDelay(unsigned long milliseconds);
+    unsigned long getPressurePotDelay() const { return pressurePotDelay; }
+
+    // New methods for configuring maintenance positions
+    void setPrimePosition(float x, float y, float angle);
+    void setCleanPosition(float x, float y, float angle);
+    void getPrimePosition(float& x, float& y, float& angle) const;
+    void getCleanPosition(float& x, float& y, float& angle) const;
+
    private:
     MovementController& movementController;
     HomingController* homingController;
@@ -69,10 +78,23 @@ class MaintenanceController
     unsigned long commandQueueTime;
     SerialCommandHandler* serialHandler;
 
+    unsigned long pressurePotDelay = 5000;  // Default 5 second delay
+
     void executePrimeSequence();
     void executeCleanSequence();
     void setWaterDiversion(bool active);  // New helper method
     void executeBackWashSequence();
+
+    // New members for maintenance position configuration
+    struct Position
+    {
+        float x = 0.0;       // Default X position
+        float y = 0.0;       // Default Y position
+        float angle = 90.0;  // Default angle
+    };
+
+    Position primePosition;  // Position for priming operations
+    Position cleanPosition;  // Position for cleaning operations
 };
 
 #endif
